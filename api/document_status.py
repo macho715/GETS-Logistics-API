@@ -1,5 +1,5 @@
-from flask import Flask, jsonify, request
 import os
+from flask import Flask, jsonify, request, abort
 
 app = Flask(__name__)
 
@@ -8,12 +8,12 @@ API_KEY = os.getenv("API_KEY")
 
 
 @app.before_request
-def check_auth():
+def authenticate():
     """Bearer Token 인증 체크 (API_KEY 환경변수가 설정된 경우만)"""
-    if API_KEY:
+    if API_KEY:  # API_KEY가 설정된 경우만 인증 체크
         token = request.headers.get("Authorization")
         if token != f"Bearer {API_KEY}":
-            return jsonify({"error": "Unauthorized"}), 401
+            abort(401)
 
 
 @app.route("/document/status/<shptNo>", methods=["GET"])
