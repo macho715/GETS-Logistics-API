@@ -1,19 +1,26 @@
 openapi: 3.1.0
 info:
   title: GETS Logistics API
-  version: 1.4.0
+  version: 1.5.0
   description: |
-    HVDC Project Logistics API (SpecPack v1.0)
+    HVDC Project Logistics API (SpecPack v1.0 + Production Client)
 
     Provides operational status packets for shipment document tracking,
     approval management, bottleneck analysis, and KPI monitoring.
+
+    Features:
+    - Offset paging (automatic pagination)
+    - Rate limiting (5 rps per base)
+    - Retry logic (429, 503)
+    - Batch operations (≤10 records/req)
+    - Upsert support (idempotent ingest)
 
     Timezone: Asia/Dubai (+04:00)
     Data Source: Airtable (Real-time)
 
 servers:
-  - url: https://gets-m775824u0-chas-projects-08028e73.vercel.app
-    description: Production server (Vercel) - SpecPack v1.0
+  - url: https://gets-cofgcl0hc-chas-projects-08028e73.vercel.app
+    description: Production server (Vercel) - Phase 2.1
 
 paths:
   /document/status/{shptNo}:
@@ -302,5 +309,76 @@ paths:
                         type: integer
                   lastUpdated:
                     type: string
+
+  /ingest/events:
+    post:
+      summary: Ingest events (idempotent)
+      operationId: ingestEvents
+      description: |
+        Ingest events with idempotent upsert.
+        
+        Features:
+        - Deduplication by eventKey
+        - Batch processing (≤10 records/req)
+        - Rate-limited (5 rps)
+        
+        Note: This endpoint is designed for automated systems (RPA, ETL).
+        Manual testing requires valid Airtable field names.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - events
+              properties:
+                batchId:
+                  type: string
+                  description: Unique batch identifier
+                  example: "2025-12-25_EDAS_0600"
+                sourceSystem:
+                  type: string
+                  description: Source system identifier
+                  example: "RPA"
+                timezone:
+                  type: string
+                  description: Timezone of the source data
+                  example: "Asia/Dubai"
+                events:
+                  type: array
+                  description: Array of events to ingest
+                  items:
+                    type: object
+                    description: Event record (fields must match Airtable schema)
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  batchId:
+                    type: string
+                  sourceSystem:
+                    type: string
+                  ingested:
+                    type: integer
+                    description: Number of events ingested
+                  batches:
+                    type: integer
+                    description: Number of API batches processed
+                  timestamp:
+                    type: string
+        '400':
+          description: Bad request (no events provided)
+        '500':
+          description: Server error
+        '503':
+          description: Airtable not configured
 
 # No authentication required - API is public
