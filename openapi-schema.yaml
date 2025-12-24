@@ -1,0 +1,155 @@
+openapi: 3.1.0
+info:
+  title: GETS Action API
+  version: 1.2.0
+  description: |
+    Retrieves logistics shipment document status and KPI summary.
+    Used by the Project Logistics Assistant GPT to analyze and summarize shipment progress.
+
+servers:
+  - url: https://gets-logistics.vercel.app
+    description: Production server (Vercel)
+  - url: http://localhost:5000
+    description: Local development server
+
+paths:
+  /document/status/{shptNo}:
+    get:
+      summary: Get document status by SHPT NO
+      operationId: getDocumentStatusByShptNo
+      description: |
+        Retrieves the document readiness status for a specific shipment number.
+        Returns BOE, DO, COO, HBL, and CIPL status information.
+      parameters:
+        - name: shptNo
+          in: path
+          required: true
+          description: Shipment number (e.g., HVDC-ADOPT-SIM-0065)
+          schema:
+            type: string
+            example: HVDC-ADOPT-SIM-0065
+      responses:
+        '200':
+          description: Successful response with document status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shptNo:
+                    type: string
+                    description: Shipment number
+                  boeStatus:
+                    type: string
+                    description: Bill of Entry status
+                  doStatus:
+                    type: string
+                    description: Delivery Order status
+                  cooReady:
+                    type: string
+                    description: Certificate of Origin readiness
+                  hblReady:
+                    type: string
+                    description: House Bill of Lading readiness
+                  ciplValid:
+                    type: string
+                    description: CIPL validity status
+                  lastUpdated:
+                    type: string
+                    format: date-time
+                    description: Last update timestamp
+              example:
+                shptNo: "HVDC-ADOPT-SIM-0065"
+                boeStatus: "Released"
+                doStatus: "Issued"
+                cooReady: "Ready"
+                hblReady: "Ready"
+                ciplValid: "Valid"
+                lastUpdated: "2025-12-24T19:30:00Z"
+        '401':
+          description: Unauthorized - Invalid or missing API key
+        '404':
+          description: Shipment not found
+
+  /status/summary:
+    get:
+      summary: Get overall shipment status summary
+      operationId: getStatusSummary
+      description: |
+        Returns aggregated KPI metrics for all shipments including:
+        - Total shipment count
+        - Completion rates for each document type
+        - Lists of pending and at-risk shipments
+      responses:
+        '200':
+          description: Successful response with KPI summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalShipments:
+                    type: integer
+                    description: Total number of shipments
+                  ciplRate:
+                    type: number
+                    format: float
+                    description: CIPL completion rate (0.0 to 1.0)
+                  hblRate:
+                    type: number
+                    format: float
+                    description: HBL completion rate
+                  cooRate:
+                    type: number
+                    format: float
+                    description: COO completion rate
+                  doRate:
+                    type: number
+                    format: float
+                    description: DO completion rate
+                  boeRate:
+                    type: number
+                    format: float
+                    description: BOE completion rate
+                  pendingBOE:
+                    type: array
+                    items:
+                      type: string
+                    description: List of shipments with pending BOE
+                  upcomingRisk:
+                    type: array
+                    items:
+                      type: string
+                    description: List of shipments at risk
+                  lastUpdated:
+                    type: string
+                    format: date-time
+                    description: Last update timestamp
+              example:
+                totalShipments: 73
+                ciplRate: 0.88
+                hblRate: 0.75
+                cooRate: 0.70
+                doRate: 0.52
+                boeRate: 0.41
+                pendingBOE:
+                  - "HVDC-ADOPT-SIM-0065"
+                  - "HVDC-ADOPT-SCT-0041"
+                upcomingRisk:
+                  - "HVDC-ADOPT-SCT-0058"
+                lastUpdated: "2025-12-24T19:30:00Z"
+        '401':
+          description: Unauthorized - Invalid or missing API key
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Optional Bearer token authentication.
+        Set API_KEY environment variable in Vercel to enable.
+
+security:
+  - BearerAuth: []
+
