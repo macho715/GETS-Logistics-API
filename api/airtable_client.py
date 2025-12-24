@@ -72,7 +72,9 @@ class AirtableClient:
             # Rate limit: wait and retry
             if resp.status_code == 429:
                 retry_after = resp.headers.get("Retry-After")
-                sleep_s = int(retry_after) if retry_after and retry_after.isdigit() else 30
+                sleep_s = (
+                    int(retry_after) if retry_after and retry_after.isdigit() else 30
+                )
                 print(f"⚠️ Rate limited (429), waiting {sleep_s}s...")
                 time.sleep(sleep_s)
                 continue
@@ -80,7 +82,9 @@ class AirtableClient:
             # Service unavailable: exponential backoff
             if resp.status_code == 503:
                 wait_s = min(8, 2 ** (attempt - 1))
-                print(f"⚠️ Service unavailable (503), retry {attempt}/{max_tries}, waiting {wait_s}s...")
+                print(
+                    f"⚠️ Service unavailable (503), retry {attempt}/{max_tries}, waiting {wait_s}s..."
+                )
                 time.sleep(wait_s)
                 continue
 
@@ -92,7 +96,9 @@ class AirtableClient:
 
             return resp.json()
 
-        raise RuntimeError(f"Airtable API failed after {max_tries} retries: {method} {url}")
+        raise RuntimeError(
+            f"Airtable API failed after {max_tries} retries: {method} {url}"
+        )
 
     # ==================== READ: List records (paged) ====================
     def list_records(
@@ -146,7 +152,9 @@ class AirtableClient:
 
     # ==================== WRITE: Create/Update/Upsert ====================
     @staticmethod
-    def _chunks(items: List[Dict[str, Any]], n: int = 10) -> Iterable[List[Dict[str, Any]]]:
+    def _chunks(
+        items: List[Dict[str, Any]], n: int = 10
+    ) -> Iterable[List[Dict[str, Any]]]:
         """Split list into chunks of size n"""
         for i in range(0, len(items), n):
             yield items[i : i + n]
@@ -239,4 +247,3 @@ class AirtableClient:
             time.sleep(0.22)
 
         return results
-

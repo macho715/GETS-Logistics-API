@@ -7,6 +7,7 @@ from enum import Enum
 
 # Import production-ready Airtable client
 from api.airtable_client import AirtableClient
+from api.schema_validator import SchemaValidator
 
 app = Flask(__name__)
 
@@ -18,17 +19,38 @@ if AIRTABLE_API_TOKEN:
 AIRTABLE_BASE_ID = "appnLz06h07aMm366"
 DUBAI_TZ = ZoneInfo("Asia/Dubai")  # +04:00
 
-# Table IDs (SpecPack v1.0)
-TABLES = {
-    "shipments": "tbl4NnKYx1ECKmaaC",
-    "documents": "tblbA8htgQSd2lOPO",
-    "approvals": "tblJh4z49DbjX7cyb",
-    "actions": "tblkDpCWYORAPqxhw",
-    "events": "tblGw5wKFQhR9FBRR",
-    "evidence": "tbljDDDNyvZY1sORx",
-    "bottleneckCodes": "tblMad2YVdiN8WAYx",
-    "owners": "tblAjPArtKVBsShfE",
-}
+# Initialize schema validator (Phase 2.2)
+schema_validator = None
+try:
+    schema_validator = SchemaValidator()
+    print(f"✅ Schema validator loaded (version: {schema_validator.get_schema_version()})")
+    
+    # Use validated table IDs from lock file
+    TABLES = {
+        "shipments": schema_validator.get_table_id("Shipments"),
+        "documents": schema_validator.get_table_id("Documents"),
+        "approvals": schema_validator.get_table_id("Approvals"),
+        "actions": schema_validator.get_table_id("Actions"),
+        "events": schema_validator.get_table_id("Events"),
+        "evidence": schema_validator.get_table_id("Evidence"),
+        "bottleneckCodes": schema_validator.get_table_id("BottleneckCodes"),
+        "owners": schema_validator.get_table_id("Owners"),
+    }
+    print(f"✅ Table IDs loaded from schema lock")
+except FileNotFoundError as e:
+    print(f"⚠️ Schema validator not available: {e}")
+    print(f"⚠️ Falling back to hardcoded table IDs")
+    # Fallback to hardcoded TABLES
+    TABLES = {
+        "shipments": "tbl4NnKYx1ECKmaaC",
+        "documents": "tblbA8htgQSd2lOPO",
+        "approvals": "tblJh4z49DbjX7cyb",
+        "actions": "tblkDpCWYORAPqxhw",
+        "events": "tblGw5wKFQhR9FBRR",
+        "evidence": "tbljDDDNyvZY1sORx",
+        "bottleneckCodes": "tblMad2YVdiN8WAYx",
+        "owners": "tblAjPArtKVBsShfE",
+    }
 
 # Initialize production-ready Airtable client
 airtable_client = None
@@ -82,7 +104,7 @@ def fetch_table_records(
 ) -> List[Dict]:
     """
     Fetch records from Airtable table using production-ready client
-    
+
     Features:
     - Automatic offset paging
     - Rate limiting (5 rps)
@@ -284,9 +306,9 @@ def index():
     """API root - health check"""
     return jsonify(
         {
-            "message": "GETS Action API for ChatGPT - SpecPack v1.0 + Production Client",
+            "message": "GETS Action API for ChatGPT - SpecPack v1.0 + Schema Validation",
             "status": "online",
-            "version": "1.5.0",
+            "version": "1.6.0",
             "dataSource": (
                 "Airtable (Real-time)" if airtable_client else "Not Connected"
             ),
@@ -296,7 +318,8 @@ def index():
                 "rate_limiting": "5 rps per base",
                 "retry_logic": "429 (30s), 503 (exponential)",
                 "batch_operations": "≤10 records/req",
-                "upsert_support": True
+                "upsert_support": True,
+                "schema_validation": schema_validator is not None
             },
             "endpoints": {
                 "home": "/",
@@ -333,7 +356,7 @@ def health_check():
         {
             "status": "healthy" if configured and connected else "degraded",
             "timestamp": now_dubai(),
-            "version": "1.5.0",  # Updated for AirtableClient
+            "version": "1.6.0",  # Updated for SchemaValidator
             "airtable": {
                 "configured": configured,
                 "connected": connected,
@@ -344,9 +367,16 @@ def health_check():
                     "rate_limiting_5rps",
                     "retry_logic_429_503",
                     "batch_operations",
-                    "upsert_support"
+                    "upsert_support",
+                    "schema_validation"
                 ]
             },
+            "schema_validator": {
+                "enabled": schema_validator is not None,
+                "version": schema_validator.get_schema_version() if schema_validator else None,
+                "base_match": (schema_validator.base_id == AIRTABLE_BASE_ID) if schema_validator else None,
+                "tables_validated": len(schema_validator.get_all_tables()) if schema_validator else 0
+            }
         }
     )
 
@@ -613,7 +643,7 @@ def get_bottleneck_summary():
 @app.route("/ingest/events", methods=["POST"])
 def ingest_events():
     """
-    Ingest events with idempotent upsert (SpecPack v1.0)
+    Ingest events with idempotent upsert (SpecPack v1.0) + Field Validation (Phase 2.2)
     
     Request body example:
     {
@@ -622,7 +652,6 @@ def ingest_events():
       "timezone": "Asia/Dubai",
       "events": [
         {
-          "eventKey": "sha256:...",
           "timestamp": "2025-12-24T09:00:00+04:00",
           "shptNo": "SCT-0143",
           "entityType": "DOCUMENT",
@@ -633,9 +662,12 @@ def ingest_events():
     }
     
     Features:
-    - Idempotent (dedupes by eventKey)
+    - Field validation against schema
+    - Idempotent (dedupes by unique fields)
     - Batch upsert (≤10 records/req)
     - Rate-limited (5 rps)
+    
+    Note: eventId is autoNumber in Airtable (cannot be provided)
     """
     if not airtable_client:
         return jsonify({
@@ -657,11 +689,37 @@ def ingest_events():
         batch_id = data.get("batchId", "unknown")
         source_system = data.get("sourceSystem", "API")
         
-        # Upsert events (dedupe by eventKey)
+        # Phase 2.2: Validate fields if validator available
+        if schema_validator:
+            validation_errors = []
+            valid_fields = schema_validator.get_valid_fields("Events")
+            
+            for i, event in enumerate(events):
+                result = schema_validator.validate_fields("Events", event)
+                if not result["valid"]:
+                    validation_errors.append({
+                        "index": i,
+                        "invalid_fields": result["invalid_fields"],
+                        "suggestions": result["suggestions"]
+                    })
+            
+            if validation_errors:
+                return jsonify({
+                    "error": "Field validation failed",
+                    "status": "validation_error",
+                    "details": validation_errors,
+                    "valid_fields": valid_fields,
+                    "hint": "Check field names against Airtable schema. Note: eventId is autoNumber and cannot be provided.",
+                    "timestamp": now_dubai()
+                }), 400
+        
+        # Upsert events
+        # Note: Events table uses timestamp+shptNo as natural key
+        # Airtable will auto-generate eventId (autoNumber)
         results = airtable_client.upsert_records(
             TABLES["events"],
             events,
-            fields_to_merge_on=["eventKey"],
+            fields_to_merge_on=["timestamp", "shptNo"],  # Natural composite key
             typecast=True
         )
         
@@ -671,6 +729,7 @@ def ingest_events():
             "sourceSystem": source_system,
             "ingested": len(events),
             "batches": len(results),
+            "validated": schema_validator is not None,
             "timestamp": now_dubai()
         })
     

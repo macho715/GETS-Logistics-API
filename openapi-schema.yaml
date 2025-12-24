@@ -316,12 +316,12 @@ paths:
       operationId: ingestEvents
       description: |
         Ingest events with idempotent upsert.
-        
+
         Features:
         - Deduplication by eventKey
         - Batch processing (≤10 records/req)
         - Rate-limited (5 rps)
-        
+
         Note: This endpoint is designed for automated systems (RPA, ETL).
         Manual testing requires valid Airtable field names.
       requestBody:

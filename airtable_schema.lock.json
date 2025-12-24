@@ -1,0 +1,586 @@
+{
+  "base": {
+    "id": "appnLz06h07aMm366"
+  },
+  "tables": {
+    "Shipments": {
+      "id": "tbl4NnKYx1ECKmaaC",
+      "name": "Shipments",
+      "primaryFieldId": "fldEQ5GwNfN6dRWnI",
+      "fields": {
+        "shptNo": {
+          "id": "fldEQ5GwNfN6dRWnI",
+          "name": "shptNo",
+          "type": "singleLineText",
+          "description": null
+        },
+        "vendor": {
+          "id": "fldwrC8TWe9rdFNfe",
+          "name": "vendor",
+          "type": "singleLineText",
+          "description": null
+        },
+        "site": {
+          "id": "fldFEdNYSbs6Zm2c4",
+          "name": "site",
+          "type": "singleLineText",
+          "description": null
+        },
+        "eta": {
+          "id": "flddGQaFY1Tn4B0ML",
+          "name": "eta",
+          "type": "dateTime",
+          "description": null
+        },
+        "mode": {
+          "id": "fldt4XGKLA0krgvIt",
+          "name": "mode",
+          "type": "singleSelect",
+          "description": null
+        },
+        "forwarder": {
+          "id": "fld8nWn3EYk7mYDAj",
+          "name": "forwarder",
+          "type": "singleLineText",
+          "description": null
+        },
+        "currentBottleneckCode": {
+          "id": "fldIACEWXLqsorJF0",
+          "name": "currentBottleneckCode",
+          "type": "singleLineText",
+          "description": null
+        },
+        "bottleneckSince": {
+          "id": "fldTLT6AMTi8udXrB",
+          "name": "bottleneckSince",
+          "type": "dateTime",
+          "description": null
+        },
+        "riskLevel": {
+          "id": "fldkbfmbgNi4iFJDk",
+          "name": "riskLevel",
+          "type": "singleSelect",
+          "description": null
+        },
+        "nextAction": {
+          "id": "fldkR6PTLDfvwnJN4",
+          "name": "nextAction",
+          "type": "singleLineText",
+          "description": null
+        },
+        "actionOwner": {
+          "id": "fldKuqW5THvGbsSzu",
+          "name": "actionOwner",
+          "type": "singleLineText",
+          "description": null
+        },
+        "dueAt": {
+          "id": "fldF1TqRtlxwevnVI",
+          "name": "dueAt",
+          "type": "dateTime",
+          "description": null
+        },
+        "stopFlag": {
+          "id": "fldp8hJ6Z2qzld1nu",
+          "name": "stopFlag",
+          "type": "checkbox",
+          "description": null
+        },
+        "stopReason": {
+          "id": "fldN2KyaGXOtMiY3k",
+          "name": "stopReason",
+          "type": "singleLineText",
+          "description": null
+        },
+        "ocrPrecision": {
+          "id": "fldhFnzUfwu6Xaj31",
+          "name": "ocrPrecision",
+          "type": "number",
+          "description": null
+        },
+        "mismatchRate": {
+          "id": "fldyoo1DZYXXJMFHY",
+          "name": "mismatchRate",
+          "type": "number",
+          "description": null
+        },
+        "rateOverrun": {
+          "id": "fldEdbfWkARPaMY0C",
+          "name": "rateOverrun",
+          "type": "number",
+          "description": null
+        }
+      },
+      "missingFields": []
+    },
+    "Documents": {
+      "id": "tblbA8htgQSd2lOPO",
+      "name": "Documents",
+      "primaryFieldId": "fldpmMcikUv0u9evG",
+      "fields": {
+        "docKey": {
+          "id": "fldpmMcikUv0u9evG",
+          "name": "docKey",
+          "type": "singleLineText",
+          "description": null
+        },
+        "shptNo": {
+          "id": "fldmRTznGzLTEu85V",
+          "name": "shptNo",
+          "type": "singleLineText",
+          "description": null
+        },
+        "docType": {
+          "id": "fldgN8FmlkC47Yqyf",
+          "name": "docType",
+          "type": "singleSelect",
+          "description": null
+        },
+        "status": {
+          "id": "fld8HQ6WJA5DstrNK",
+          "name": "status",
+          "type": "singleSelect",
+          "description": null
+        },
+        "sourceSystem": {
+          "id": "fldWctaogKEorEyCo",
+          "name": "sourceSystem",
+          "type": "singleLineText",
+          "description": null
+        },
+        "externalRef": {
+          "id": "fldwtDEdNCc1yJx4u",
+          "name": "externalRef",
+          "type": "singleLineText",
+          "description": null
+        },
+        "submittedAt": {
+          "id": "fld23v40H4l5lHvjI",
+          "name": "submittedAt",
+          "type": "dateTime",
+          "description": null
+        },
+        "issuedAt": {
+          "id": "fldUAGUFJ33J0YvIo",
+          "name": "issuedAt",
+          "type": "dateTime",
+          "description": null
+        },
+        "expiryAt": {
+          "id": "fldgED4jeWG0KDmKd",
+          "name": "expiryAt",
+          "type": "dateTime",
+          "description": null
+        },
+        "remarks": {
+          "id": "fld66rDKVonOfdafL",
+          "name": "remarks",
+          "type": "multilineText",
+          "description": null
+        }
+      },
+      "missingFields": []
+    },
+    "Approvals": {
+      "id": "tblJh4z49DbjX7cyb",
+      "name": "Approvals",
+      "primaryFieldId": "fldDElgFkwdKRbUZW",
+      "fields": {
+        "approvalKey": {
+          "id": "fldDElgFkwdKRbUZW",
+          "name": "approvalKey",
+          "type": "singleLineText",
+          "description": null
+        },
+        "shptNo": {
+          "id": "fldM1DSjK9xhkCQgk",
+          "name": "shptNo",
+          "type": "singleLineText",
+          "description": null
+        },
+        "approvalType": {
+          "id": "fldnBCK8aBkR8BQXg",
+          "name": "approvalType",
+          "type": "singleSelect",
+          "description": null
+        },
+        "status": {
+          "id": "fldlaNUUV23pfXsVJ",
+          "name": "status",
+          "type": "singleSelect",
+          "description": null
+        },
+        "dueAt": {
+          "id": "fldLS5JmajZQrbSw2",
+          "name": "dueAt",
+          "type": "dateTime",
+          "description": null
+        },
+        "submittedAt": {
+          "id": "fldQvXsEfCfZIQ4eO",
+          "name": "submittedAt",
+          "type": "dateTime",
+          "description": null
+        },
+        "approvedAt": {
+          "id": "fldoOBQ54EUp7Rqm8",
+          "name": "approvedAt",
+          "type": "dateTime",
+          "description": null
+        },
+        "owner": {
+          "id": "fldCYsmrPIWQm44zm",
+          "name": "owner",
+          "type": "singleLineText",
+          "description": null
+        },
+        "remarks": {
+          "id": "fldZH57r1l5aR1QU9",
+          "name": "remarks",
+          "type": "multilineText",
+          "description": null
+        }
+      },
+      "missingFields": []
+    },
+    "Actions": {
+      "id": "tblkDpCWYORAPqxhw",
+      "name": "Actions",
+      "primaryFieldId": "fldScKtL6EoWbAbXY",
+      "fields": {
+        "actionKey": {
+          "id": "fldScKtL6EoWbAbXY",
+          "name": "actionKey",
+          "type": "singleLineText",
+          "description": null
+        },
+        "shptNo": {
+          "id": "fldvQSM4Uf1ckQ107",
+          "name": "shptNo",
+          "type": "singleLineText",
+          "description": null
+        },
+        "bottleneckCode": {
+          "id": "fldsrgI5AYgNrYh8b",
+          "name": "bottleneckCode",
+          "type": "singleLineText",
+          "description": null
+        },
+        "actionText": {
+          "id": "fldUgpe4galkjERcY",
+          "name": "actionText",
+          "type": "multilineText",
+          "description": null
+        },
+        "owner": {
+          "id": "fldLI0zldMrrM5fJ4",
+          "name": "owner",
+          "type": "singleLineText",
+          "description": null
+        },
+        "dueAt": {
+          "id": "fldaXsyp6dNTmx56W",
+          "name": "dueAt",
+          "type": "dateTime",
+          "description": null
+        },
+        "status": {
+          "id": "fldLmSWCdRprObgST",
+          "name": "status",
+          "type": "singleSelect",
+          "description": null
+        },
+        "priority": {
+          "id": "fldX80o1udxsK6gmy",
+          "name": "priority",
+          "type": "singleSelect",
+          "description": null
+        },
+        "closedAt": {
+          "id": "fldvcdUEuRP68wwSb",
+          "name": "closedAt",
+          "type": "dateTime",
+          "description": null
+        }
+      },
+      "missingFields": []
+    },
+    "Events": {
+      "id": "tblGw5wKFQhR9FBRR",
+      "name": "Events",
+      "primaryFieldId": "fldVAMh4QxQVdKLE0",
+      "fields": {
+        "eventId": {
+          "id": "fldVAMh4QxQVdKLE0",
+          "name": "eventId",
+          "type": "autoNumber",
+          "description": null
+        },
+        "timestamp": {
+          "id": "fldVIht1pNmtk1jMp",
+          "name": "timestamp",
+          "type": "dateTime",
+          "description": null
+        },
+        "shptNo": {
+          "id": "fldmbmNgM2eX97bA7",
+          "name": "shptNo",
+          "type": "singleLineText",
+          "description": null
+        },
+        "entityType": {
+          "id": "fld85q4BCwZThPm9J",
+          "name": "entityType",
+          "type": "singleSelect",
+          "description": null
+        },
+        "fromStatus": {
+          "id": "fld7GbpyCLf0WkPdl",
+          "name": "fromStatus",
+          "type": "singleLineText",
+          "description": null
+        },
+        "toStatus": {
+          "id": "fldDZtWcKQ7WNT8KL",
+          "name": "toStatus",
+          "type": "singleLineText",
+          "description": null
+        },
+        "bottleneckCode": {
+          "id": "fldcustnLL90tqW9c",
+          "name": "bottleneckCode",
+          "type": "singleLineText",
+          "description": null
+        },
+        "actor": {
+          "id": "fld1aEgmcsqhnLGQk",
+          "name": "actor",
+          "type": "singleLineText",
+          "description": null
+        },
+        "sourceSystem": {
+          "id": "fldRoX6VWY6EIqe8h",
+          "name": "sourceSystem",
+          "type": "singleLineText",
+          "description": null
+        },
+        "rawPayload": {
+          "id": "fld8p9m7ldVCQ2grN",
+          "name": "rawPayload",
+          "type": "multilineText",
+          "description": null
+        }
+      },
+      "missingFields": []
+    },
+    "Evidence": {
+      "id": "tbljDDDNyvZY1sORx",
+      "name": "Evidence",
+      "primaryFieldId": "fldfVD8fGqnS2pqYM",
+      "fields": {
+        "evidenceId": {
+          "id": "fldfVD8fGqnS2pqYM",
+          "name": "evidenceId",
+          "type": "singleLineText",
+          "description": null
+        },
+        "type": {
+          "id": "fld144r2em2OBPfIP",
+          "name": "type",
+          "type": "singleLineText",
+          "description": null
+        },
+        "externalId": {
+          "id": "fld2QEXejDIC4bnVg",
+          "name": "externalId",
+          "type": "singleLineText",
+          "description": null
+        },
+        "sha256": {
+          "id": "fldahsNkxpa2NsS5x",
+          "name": "sha256",
+          "type": "singleLineText",
+          "description": null
+        },
+        "url": {
+          "id": "fldlx51ieXZ2XzrrM",
+          "name": "url",
+          "type": "url",
+          "description": null
+        },
+        "capturedAt": {
+          "id": "fldgA8zIUjQWI4egQ",
+          "name": "capturedAt",
+          "type": "dateTime",
+          "description": null
+        },
+        "capturedBy": {
+          "id": "fldCoffP1urdoUoXC",
+          "name": "capturedBy",
+          "type": "singleLineText",
+          "description": null
+        },
+        "notes": {
+          "id": "fldHZRfFFwGQ29Nk0",
+          "name": "notes",
+          "type": "multilineText",
+          "description": null
+        }
+      },
+      "missingFields": []
+    },
+    "BottleneckCodes": {
+      "id": "tblMad2YVdiN8WAYx",
+      "name": "BottleneckCodes",
+      "primaryFieldId": "fldsvpytOY2zuZv8I",
+      "fields": {
+        "code": {
+          "id": "fldsvpytOY2zuZv8I",
+          "name": "code",
+          "type": "singleLineText",
+          "description": null
+        },
+        "category": {
+          "id": "fld0KNFCAvybE1gqw",
+          "name": "category",
+          "type": "singleLineText",
+          "description": null
+        },
+        "description": {
+          "id": "fldwRZHgclhAxeQfW",
+          "name": "description",
+          "type": "multilineText",
+          "description": null
+        },
+        "riskDefault": {
+          "id": "fldZ1Mp3L0Sze6Egg",
+          "name": "riskDefault",
+          "type": "singleSelect",
+          "description": null
+        },
+        "nextActionTemplate": {
+          "id": "fldi5I1ZRSlV21lG8",
+          "name": "nextActionTemplate",
+          "type": "multilineText",
+          "description": null
+        },
+        "slaHours": {
+          "id": "fldCmpVaalPUteU6Q",
+          "name": "slaHours",
+          "type": "number",
+          "description": null
+        },
+        "stopTrigger": {
+          "id": "fldCHVRvbRHXTsd1i",
+          "name": "stopTrigger",
+          "type": "checkbox",
+          "description": null
+        }
+      },
+      "missingFields": []
+    },
+    "Owners": {
+      "id": "tblAjPArtKVBsShfE",
+      "name": "Owners",
+      "primaryFieldId": "fldBfTdicJjbZSA2f",
+      "fields": {
+        "ownerName": {
+          "id": "fldBfTdicJjbZSA2f",
+          "name": "ownerName",
+          "type": "singleLineText",
+          "description": null
+        },
+        "team": {
+          "id": "fldSXiTbv5uNCK1NS",
+          "name": "team",
+          "type": "singleLineText",
+          "description": null
+        },
+        "email": {
+          "id": "flda6bh7G3sAdHi7n",
+          "name": "email",
+          "type": "email",
+          "description": null
+        },
+        "chatHandle": {
+          "id": "fldo8HpCQiz4wBpnV",
+          "name": "chatHandle",
+          "type": "singleLineText",
+          "description": null
+        },
+        "roleNotes": {
+          "id": "fldQYxOWTGzsoLSwR",
+          "name": "roleNotes",
+          "type": "multilineText",
+          "description": null
+        }
+      },
+      "missingFields": []
+    },
+    "Vendors": {
+      "id": "tblZ6Kc9EQP7Grx3B",
+      "name": "Vendors",
+      "primaryFieldId": "fldmMTVSuD5bfTlEJ",
+      "fields": {
+        "vendorName": {
+          "id": "fldmMTVSuD5bfTlEJ",
+          "name": "vendorName",
+          "type": "singleLineText",
+          "description": null
+        },
+        "vendorType": {
+          "id": "fldqxpYvufGlgsM8P",
+          "name": "vendorType",
+          "type": "singleLineText",
+          "description": null
+        },
+        "country": {
+          "id": "fldDPq1RxgSu9VfhV",
+          "name": "country",
+          "type": "singleLineText",
+          "description": null
+        },
+        "contact": {
+          "id": "fldcNAXGjq5X01JOG",
+          "name": "contact",
+          "type": "singleLineText",
+          "description": null
+        }
+      },
+      "missingFields": []
+    },
+    "Sites": {
+      "id": "tblSqSRWCe1IxCIih",
+      "name": "Sites",
+      "primaryFieldId": "fldWIIqsKVc0N01O1",
+      "fields": {
+        "siteCode": {
+          "id": "fldWIIqsKVc0N01O1",
+          "name": "siteCode",
+          "type": "singleLineText",
+          "description": null
+        },
+        "siteName": {
+          "id": "fldk8MBEDkJ5unlIt",
+          "name": "siteName",
+          "type": "singleLineText",
+          "description": null
+        },
+        "country": {
+          "id": "fldgMOXHfXFRBlS83",
+          "name": "country",
+          "type": "singleLineText",
+          "description": null
+        },
+        "timeZone": {
+          "id": "fldlkpK9UiyQihNDj",
+          "name": "timeZone",
+          "type": "singleLineText",
+          "description": null
+        }
+      },
+      "missingFields": []
+    }
+  },
+  "generatedAt": "2025-12-25T00:32:52+0400"
+}
