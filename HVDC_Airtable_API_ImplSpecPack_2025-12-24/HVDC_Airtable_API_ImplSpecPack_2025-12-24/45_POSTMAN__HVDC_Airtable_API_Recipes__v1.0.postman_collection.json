@@ -1,0 +1,147 @@
+{
+  "info": {
+    "name": "HVDC Airtable Web API Recipes",
+    "_postman_id": "8d3b7b4c-6f9e-4d3a-9e65-0a31f0a9c2b1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "airtable_base_url",
+      "value": "https://api.airtable.com/v0"
+    },
+    {
+      "key": "baseId",
+      "value": "appXXXXXXXXXXXXXX"
+    },
+    {
+      "key": "tableId",
+      "value": "tblXXXXXXXXXXXXXX"
+    },
+    {
+      "key": "pat",
+      "value": "YOUR_PAT"
+    }
+  ],
+  "item": [
+    {
+      "name": "List records (paged)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{pat}}"
+          }
+        ],
+        "url": {
+          "raw": "{{airtable_base_url}}/{{baseId}}/{{tableId}}?pageSize=100",
+          "host": [
+            "{{airtable_base_url}}"
+          ],
+          "path": [
+            "{{baseId}}",
+            "{{tableId}}"
+          ],
+          "query": [
+            {
+              "key": "pageSize",
+              "value": "100"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Find by shptNo (filterByFormula)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{pat}}"
+          }
+        ],
+        "url": {
+          "raw": "{{airtable_base_url}}/{{baseId}}/{{tableId}}?filterByFormula=%7BshptNo%7D%3D%27SCT-0143%27&pageSize=1",
+          "host": [
+            "{{airtable_base_url}}"
+          ],
+          "path": [
+            "{{baseId}}",
+            "{{tableId}}"
+          ],
+          "query": [
+            {
+              "key": "filterByFormula",
+              "value": "{shptNo}='SCT-0143'"
+            },
+            {
+              "key": "pageSize",
+              "value": "1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create records (<=10)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{pat}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"records\": [\n    {\n      \"fields\": {\n        \"shptNo\": \"SCT-0143\",\n        \"vendor\": \"DSV\",\n        \"incoterm\": \"DAP\",\n        \"hs2\": \"85\"\n      }\n    },\n    {\n      \"fields\": {\n        \"shptNo\": \"SCT-0144\",\n        \"vendor\": \"DSV\",\n        \"incoterm\": \"DAP\",\n        \"hs2\": \"85\"\n      }\n    }\n  ],\n  \"typecast\": true\n}"
+        },
+        "url": {
+          "raw": "{{airtable_base_url}}/{{baseId}}/{{tableId}}",
+          "host": [
+            "{{airtable_base_url}}"
+          ],
+          "path": [
+            "{{baseId}}",
+            "{{tableId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Upsert records (performUpsert, <=10)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{pat}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"performUpsert\": {\n    \"fieldsToMergeOn\": [\n      \"shptNo\"\n    ]\n  },\n  \"records\": [\n    {\n      \"fields\": {\n        \"shptNo\": \"SCT-0143\",\n        \"vendor\": \"DSV\",\n        \"incoterm\": \"DAP\",\n        \"hs2\": \"85\"\n      }\n    },\n    {\n      \"fields\": {\n        \"shptNo\": \"SCT-0144\",\n        \"vendor\": \"DSV\",\n        \"incoterm\": \"DAP\",\n        \"hs2\": \"85\"\n      }\n    }\n  ],\n  \"typecast\": true\n}"
+        },
+        "url": {
+          "raw": "{{airtable_base_url}}/{{baseId}}/{{tableId}}",
+          "host": [
+            "{{airtable_base_url}}"
+          ],
+          "path": [
+            "{{baseId}}",
+            "{{tableId}}"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -4,10 +4,10 @@ info:
   version: 1.4.0
   description: |
     HVDC Project Logistics API (SpecPack v1.0)
-    
+
     Provides operational status packets for shipment document tracking,
     approval management, bottleneck analysis, and KPI monitoring.
-    
+
     Timezone: Asia/Dubai (+04:00)
     Data Source: Airtable (Real-time)
 
