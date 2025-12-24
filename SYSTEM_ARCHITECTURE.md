@@ -1,9 +1,9 @@
 # 🏗️ GETS API System Architecture
 
-**Project**: HVDC Logistics Tracking System  
-**Client**: Samsung C&T / ADNOC / DSV  
-**Version**: 1.6.0 (Phase 2.2)  
-**Date**: 2025-12-25  
+**Project**: HVDC Logistics Tracking System
+**Client**: Samsung C&T / ADNOC / DSV
+**Version**: 1.6.0 (Phase 2.2)
+**Date**: 2025-12-25
 **Timezone**: Asia/Dubai (+04:00)
 
 ---
@@ -59,10 +59,10 @@ graph TB
     B --> E
     C --> E
     D --> E
-    
+
     E --> F
     E --> G
-    
+
     F --> H
     F --> I
     F --> J
@@ -71,11 +71,11 @@ graph TB
     F --> M
     F --> N
     F --> O
-    
+
     G --> Q
     E --> P
     E --> R
-    
+
     style E fill:#4CAF50
     style F fill:#2196F3
     style G fill:#FF9800
@@ -119,16 +119,16 @@ graph TD
     A1 --> B1
     A1 --> B2
     A1 --> B3
-    
+
     B1 --> C1
     B2 --> C1
     B3 --> C1
     B4 --> C1
-    
+
     C1 --> C2
     C1 --> D2
     C1 --> D3
-    
+
     C2 --> D1
     D2 --> D1
     D3 --> D1
@@ -151,19 +151,19 @@ sequenceDiagram
     Client->>API: GET /document/status/SCT-0143
     API->>Validator: Load schema lock
     Validator-->>API: Table IDs + Field names
-    
+
     API->>ATC: list_records(Shipments, filter)
     ATC->>DB: GET with offset paging
     DB-->>ATC: Shipment record
-    
+
     API->>ATC: list_records(Documents, filter)
     ATC->>DB: GET with paging
     DB-->>ATC: Document records
-    
+
     API->>ATC: list_records(Actions, filter)
     ATC->>DB: GET with paging
     DB-->>ATC: Action records
-    
+
     API->>API: Build Status Packet
     API-->>Client: JSON Response (Status Packet)
 ```
@@ -180,20 +180,20 @@ sequenceDiagram
 
     RPA->>API: POST /ingest/events
     API->>Validator: validate_fields(Events, record)
-    
+
     alt Invalid Fields
         Validator-->>API: {valid: false, invalid_fields: [...]}
         API-->>RPA: 400 Bad Request + Suggestions
     else Valid Fields
         Validator-->>API: {valid: true}
         API->>ATC: upsert_records(Events, [...])
-        
+
         loop Batch Processing (≤10 records)
             ATC->>DB: PATCH with performUpsert
             DB-->>ATC: Success
             ATC->>ATC: sleep(0.22s) for rate limiting
         end
-        
+
         ATC-->>API: Upsert results
         API-->>RPA: 200 OK {ingested: N, validated: true}
     end
@@ -226,7 +226,7 @@ graph LR
     A --> C
     C --> D
     A --> E
-    
+
     style A fill:#4CAF50
     style B fill:#2196F3
     style C fill:#FF9800
@@ -242,21 +242,21 @@ graph TD
     A[Client Request] --> B{Authentication}
     B -->|Public API| C[No Auth Required]
     B -->|Future| D[API Key / Bearer Token]
-    
+
     C --> E{Rate Limiting}
     D --> E
-    
+
     E -->|Within Limit| F[Schema Validation]
     E -->|Exceeded| G[429 Too Many Requests]
-    
+
     F -->|Valid| H[Airtable API]
     F -->|Invalid| I[400 Bad Request]
-    
+
     H --> J{Rate Limited by Airtable?}
     J -->|Yes 429| K[Wait 30s + Retry]
     J -->|No| L[Success Response]
     K --> H
-    
+
     style E fill:#FF9800
     style F fill:#4CAF50
     style H fill:#2196F3
@@ -276,15 +276,15 @@ erDiagram
     Shipments ||--o{ Events : has
     Shipments }o--|| Vendors : "placed by"
     Shipments }o--|| Sites : "delivered to"
-    
+
     Documents ||--o{ Evidence : references
     Approvals ||--o{ Evidence : references
     Actions ||--o{ Evidence : references
     Events ||--o{ Evidence : references
-    
+
     Actions }o--|| BottleneckCodes : "addresses"
     Actions }o--|| Owners : "assigned to"
-    
+
     Shipments {
         string shptNo PK
         string vendor
@@ -294,7 +294,7 @@ erDiagram
         datetime bottleneckSince
         string riskLevel
     }
-    
+
     Documents {
         string docKey PK
         string shptNo FK
@@ -303,7 +303,7 @@ erDiagram
         datetime submittedAt
         datetime issuedAt
     }
-    
+
     Events {
         number eventId PK
         datetime timestamp
@@ -323,21 +323,21 @@ erDiagram
 graph TD
     A[API Request] --> B{Airtable Client}
     B --> C[Check Rate: 5 rps/base]
-    
+
     C -->|OK| D[Execute Request]
     C -->|429| E[Wait 30s]
     E --> D
-    
+
     D --> F{Response Code}
     F -->|200 OK| G[Return Success]
     F -->|503| H[Exponential Backoff]
     F -->|422| I[Schema Validation Error]
-    
+
     H -->|Retry 1| D
     H -->|Retry 2| D
     H -->|Retry 3| D
     H -->|Max Retries| J[Return Error]
-    
+
     style C fill:#FF9800
     style E fill:#F44336
     style H fill:#FF5722
@@ -350,16 +350,16 @@ graph LR
     A[API Request] --> B{Cache Hit?}
     B -->|Yes| C[Return Cached]
     B -->|No| D[Query Airtable]
-    
+
     D --> E[Store in Cache]
     E --> F[Return Fresh Data]
-    
+
     subgraph "Cache Layers"
         G[Reference Tables: 30min]
         H[Status Data: 5min]
         I[KPI Summary: 10min]
     end
-    
+
     C --> G
     C --> H
     C --> I
@@ -373,17 +373,17 @@ graph LR
 graph LR
     A[Git Commit] --> B[GitHub Push]
     B --> C[Vercel Deploy]
-    
+
     C --> D[Build Phase]
     D --> E[Install Dependencies]
     E --> F[Validate Schema Lock]
-    
+
     F --> G[Deploy to Production]
     G --> H[Health Check]
-    
+
     H -->|Pass| I[Live Traffic]
     H -->|Fail| J[Rollback]
-    
+
     style G fill:#4CAF50
     style I fill:#8BC34A
     style J fill:#F44336
@@ -396,21 +396,21 @@ graph LR
 ```mermaid
 graph TD
     A[Production API] --> B[Metrics Collection]
-    
+
     B --> C[Response Times]
     B --> D[Error Rates]
     B --> E[Rate Limit Events]
     B --> F[Schema Validation Failures]
-    
+
     C --> G[Vercel Analytics]
     D --> G
     E --> G
     F --> G
-    
+
     G --> H{Alert Thresholds}
     H -->|Breach| I[Notification]
     H -->|Normal| J[Dashboard]
-    
+
     style A fill:#4CAF50
     style G fill:#2196F3
     style I fill:#FF9800
@@ -427,20 +427,20 @@ graph TB
     A --> D[Approval Operations]
     A --> E[Analysis & KPI]
     A --> F[Data Ingest]
-    
+
     B --> B1[GET /]
     B --> B2[GET /health]
-    
+
     C --> C1[GET /document/status/:shptNo]
     C --> C2[GET /document/events/:shptNo]
-    
+
     D --> D1[GET /approval/status/:shptNo]
-    
+
     E --> E1[GET /status/summary]
     E --> E2[GET /bottleneck/summary]
-    
+
     F --> F1[POST /ingest/events]
-    
+
     style A fill:#673AB7
     style C1 fill:#4CAF50
     style E1 fill:#2196F3
@@ -454,17 +454,17 @@ graph TB
 ```mermaid
 timeline
     title GETS API Development Timeline
-    
+
     2025-12-24 : Phase 1.0 - SpecPack v1.0
               : Status Packet Implementation
               : 11-Table Normalized Design
-              
+
     2025-12-25 00:19 : Phase 2.1 - AirtableClient
                     : Production-ready Client
                     : Offset Paging
                     : Rate Limiting
                     : Retry Logic
-                    
+
     2025-12-25 00:35 : Phase 2.2 - SchemaValidator
                     : Schema Lock Generation
                     : Field Validation
@@ -619,15 +619,15 @@ curl -X POST https://gets-416ut4t8g-chas-projects-08028e73.vercel.app/ingest/eve
 ### 트러블슈팅
 
 #### 422 UNKNOWN_FIELD_NAME 에러
-**원인**: Airtable 테이블에 존재하지 않는 필드명 사용  
+**원인**: Airtable 테이블에 존재하지 않는 필드명 사용
 **해결**: `airtable_schema.lock.json` 참조하여 정확한 필드명 확인
 
 #### 429 Rate Limit 초과
-**원인**: Airtable API 5 rps/base 제한 초과  
+**원인**: Airtable API 5 rps/base 제한 초과
 **해결**: AirtableClient가 자동으로 30초 대기 후 재시도
 
 #### 503 Service Unavailable
-**원인**: Airtable 일시적 장애  
+**원인**: Airtable 일시적 장애
 **해결**: AirtableClient가 지수 백오프로 자동 재시도
 
 ---
@@ -648,9 +648,9 @@ curl -X POST https://gets-416ut4t8g-chas-projects-08028e73.vercel.app/ingest/eve
 
 ---
 
-**Last Updated**: 2025-12-25T00:45:00+04:00  
-**Production URL**: https://gets-416ut4t8g-chas-projects-08028e73.vercel.app  
-**Version**: 1.6.0 (Phase 2.2 Complete)  
+**Last Updated**: 2025-12-25T00:45:00+04:00
+**Production URL**: https://gets-416ut4t8g-chas-projects-08028e73.vercel.app
+**Version**: 1.6.0 (Phase 2.2 Complete)
 **Next Milestone**: Phase 2.3 - OpenAPI Schema Update
 
 ---
