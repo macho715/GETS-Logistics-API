@@ -1,24 +1,8 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/document_status.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/",
-      "dest": "api/document_status.py"
-    },
-    {
-      "src": "/document/status/(.*)",
-      "dest": "api/document_status.py"
-    },
-    {
-      "src": "/status/summary",
-      "dest": "api/document_status.py"
+      "source": "/(.*)",
+      "destination": "/api/document_status"
     }
   ]
 }
-
