@@ -76,9 +76,3 @@ def index():
             },
         }
     )
-
-
-# Vercel용 핸들러
-def handler(request):
-    with app.request_context(request.environ):
-        return app.full_dispatch_request()
