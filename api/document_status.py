@@ -8,7 +8,13 @@ from enum import Enum
 # Import production-ready Airtable client and locked configuration (Phase 2.3)
 from api.airtable_client import AirtableClient
 from api.schema_validator import SchemaValidator
-from airtable_locked_config import BASE_ID, TABLES, SCHEMA_VERSION, PROTECTED_FIELDS, SCHEMA_GAPS
+from airtable_locked_config import (
+    BASE_ID,
+    TABLES,
+    SCHEMA_VERSION,
+    PROTECTED_FIELDS,
+    SCHEMA_GAPS,
+)
 
 app = Flask(__name__)
 
@@ -25,7 +31,7 @@ schema_validator = None
 try:
     schema_validator = SchemaValidator()
     current_version = schema_validator.get_schema_version()
-    
+
     # Validate schema version match (Phase 2.3)
     if current_version != SCHEMA_VERSION:
         print(f"⚠️ WARNING: Schema version mismatch detected!")
@@ -34,7 +40,7 @@ try:
         print(f"   Consider regenerating airtable_locked_config.py")
     else:
         print(f"✅ Schema version validated: {SCHEMA_VERSION}")
-    
+
     print(f"✅ Schema validator loaded for field validation")
 except FileNotFoundError as e:
     print(f"⚠️ Schema validator not available: {e}")
@@ -43,7 +49,9 @@ except FileNotFoundError as e:
 # Use locked TABLES configuration (Phase 2.3)
 # Table IDs are immutable and safe for table renames
 print(f"✅ Using locked table configuration ({len(TABLES)} tables)")
-print(f"✅ Protected fields: {sum(len(fields) for fields in PROTECTED_FIELDS.values())} fields")
+print(
+    f"✅ Protected fields: {sum(len(fields) for fields in PROTECTED_FIELDS.values())} fields"
+)
 print(f"ℹ️ Known schema gaps: {len(SCHEMA_GAPS)}")
 
 # Convert TABLES keys to lowercase for backward compatibility
@@ -322,7 +330,9 @@ def index():
             "lockedConfig": {
                 "baseId": BASE_ID,
                 "tables": len(TABLES),
-                "protectedFields": sum(len(fields) for fields in PROTECTED_FIELDS.values()),
+                "protectedFields": sum(
+                    len(fields) for fields in PROTECTED_FIELDS.values()
+                ),
                 "schemaGaps": len(SCHEMA_GAPS),
             },
             "features": {
@@ -395,7 +405,9 @@ def health_check():
                 "schemaVersion": SCHEMA_VERSION,
                 "baseId": BASE_ID,
                 "tablesLocked": len(TABLES),
-                "protectedFields": sum(len(fields) for fields in PROTECTED_FIELDS.values()),
+                "protectedFields": sum(
+                    len(fields) for fields in PROTECTED_FIELDS.values()
+                ),
                 "schemaGaps": list(SCHEMA_GAPS.keys()),
                 "versionMatch": schema_version_match,
             },
