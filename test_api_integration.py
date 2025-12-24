@@ -45,7 +45,7 @@ def test_endpoint(method: str, endpoint: str, **kwargs) -> Dict:
     """Test an API endpoint and return response"""
     url = f"{BASE_URL}{endpoint}"
     print_info(f"{method} {endpoint}")
-    
+
     try:
         if method == "GET":
             response = requests.get(url, **kwargs)
@@ -53,35 +53,34 @@ def test_endpoint(method: str, endpoint: str, **kwargs) -> Dict:
             response = requests.post(url, **kwargs)
         else:
             raise ValueError(f"Unsupported method: {method}")
-        
+
         print_info(f"Status: {response.status_code}")
-        
+
         if response.status_code in [200, 201]:
             print_success(f"Success: {response.status_code}")
         elif response.status_code == 404:
             print_error(f"Not Found: {response.status_code}")
         else:
             print_error(f"Error: {response.status_code}")
-        
+
         return {
             "status_code": response.status_code,
-            "json": response.json() if response.headers.get("content-type") == "application/json" else None,
-            "success": 200 <= response.status_code < 300
+            "json": (
+                response.json()
+                if response.headers.get("content-type") == "application/json"
+                else None
+            ),
+            "success": 200 <= response.status_code < 300,
         }
     except Exception as e:
         print_error(f"Exception: {str(e)}")
-        return {
-            "status_code": None,
-            "json": None,
-            "success": False,
-            "error": str(e)
-        }
+        return {"status_code": None, "json": None, "success": False, "error": str(e)}
 
 
 def validate_schema_version(data: Dict) -> bool:
     """Validate schema version in response"""
     expected = "2025-12-25T00:32:52+0400"
-    
+
     if "schemaVersion" in data:
         actual = data["schemaVersion"]
         if actual == expected:
@@ -90,7 +89,7 @@ def validate_schema_version(data: Dict) -> bool:
         else:
             print_error(f"Schema version mismatch: {actual} != {expected}")
             return False
-    
+
     return True  # Optional field
 
 
@@ -98,10 +97,10 @@ def validate_locked_config(data: Dict) -> bool:
     """Validate locked config in response"""
     if "lockedConfig" not in data:
         return True  # Optional field
-    
+
     config = data["lockedConfig"]
     checks = []
-    
+
     # Check baseId
     if config.get("baseId") == "appnLz06h07aMm366":
         print_success(f"Base ID validated: {config['baseId']}")
@@ -109,7 +108,7 @@ def validate_locked_config(data: Dict) -> bool:
     else:
         print_error(f"Base ID invalid: {config.get('baseId')}")
         checks.append(False)
-    
+
     # Check tables count
     if config.get("tables") == 10 or config.get("tablesLocked") == 10:
         tables = config.get("tables") or config.get("tablesLocked")
@@ -118,7 +117,7 @@ def validate_locked_config(data: Dict) -> bool:
     else:
         print_error(f"Tables count invalid: {config.get('tables')}")
         checks.append(False)
-    
+
     # Check protected fields
     if config.get("protectedFields", 0) >= 20:
         print_success(f"Protected fields validated: {config['protectedFields']}")
@@ -126,7 +125,7 @@ def validate_locked_config(data: Dict) -> bool:
     else:
         print_error(f"Protected fields invalid: {config.get('protectedFields')}")
         checks.append(False)
-    
+
     return all(checks)
 
 
@@ -134,29 +133,29 @@ def validate_locked_config(data: Dict) -> bool:
 def test_1_home():
     """Test GET / (Home)"""
     print_test("1. GET / (Home)")
-    
+
     result = test_endpoint("GET", "/")
-    
+
     if not result["success"]:
         return False
-    
+
     data = result["json"]
-    
+
     # Validate version
     if data.get("version") == "1.7.0":
         print_success(f"Version validated: {data['version']}")
     else:
         print_error(f"Version mismatch: {data.get('version')} != 1.7.0")
         return False
-    
+
     # Validate schema version
     if not validate_schema_version(data):
         return False
-    
+
     # Validate locked config
     if not validate_locked_config(data):
         return False
-    
+
     # Validate features
     features = data.get("features", {})
     if features.get("locked_mapping") and features.get("rename_protection"):
@@ -164,7 +163,7 @@ def test_1_home():
     else:
         print_error("Locked mapping features missing")
         return False
-    
+
     print_success("TEST PASSED")
     return True
 
@@ -172,32 +171,32 @@ def test_1_home():
 def test_2_health():
     """Test GET /health"""
     print_test("2. GET /health (Health Check)")
-    
+
     result = test_endpoint("GET", "/health")
-    
+
     if not result["success"]:
         return False
-    
+
     data = result["json"]
-    
+
     # Validate status
     if data.get("status") in ["healthy", "degraded"]:
         print_success(f"Status: {data['status']}")
     else:
         print_error(f"Invalid status: {data.get('status')}")
         return False
-    
+
     # Validate version
     if data.get("version") == "1.7.0":
         print_success(f"Version validated: {data['version']}")
     else:
         print_error(f"Version mismatch: {data.get('version')}")
         return False
-    
+
     # Validate locked config
     if not validate_locked_config(data):
         return False
-    
+
     # Check schema version match
     locked_config = data.get("lockedConfig", {})
     if locked_config.get("versionMatch") is not None:
@@ -206,7 +205,7 @@ def test_2_health():
         else:
             print_error("Schema version mismatch detected")
             return False
-    
+
     print_success("TEST PASSED")
     return True
 
@@ -214,19 +213,19 @@ def test_2_health():
 def test_3_document_status():
     """Test GET /document/status/{shptNo}"""
     print_test(f"3. GET /document/status/{TEST_SHPT_NO}")
-    
+
     result = test_endpoint("GET", f"/document/status/{TEST_SHPT_NO}")
-    
+
     if result["status_code"] == 404:
         print_info(f"Shipment {TEST_SHPT_NO} not found (expected for test data)")
         print_success("TEST PASSED (404 expected)")
         return True
-    
+
     if not result["success"]:
         return False
-    
+
     data = result["json"]
-    
+
     # Validate structure
     required_fields = ["shptNo", "doc", "bottleneck", "action"]
     for field in required_fields:
@@ -235,7 +234,7 @@ def test_3_document_status():
         else:
             print_error(f"Missing field: {field}")
             return False
-    
+
     # Validate doc structure
     doc_fields = ["boeStatus", "doStatus", "cooStatus", "hblStatus", "ciplStatus"]
     doc = data.get("doc", {})
@@ -244,7 +243,7 @@ def test_3_document_status():
             print_success(f"Doc field present: {field}")
         else:
             print_error(f"Missing doc field: {field}")
-    
+
     print_success("TEST PASSED")
     return True
 
@@ -252,19 +251,19 @@ def test_3_document_status():
 def test_4_approval_status():
     """Test GET /approval/status/{shptNo}"""
     print_test(f"4. GET /approval/status/{TEST_SHPT_NO}")
-    
+
     result = test_endpoint("GET", f"/approval/status/{TEST_SHPT_NO}")
-    
+
     if result["status_code"] == 404:
         print_info(f"Shipment {TEST_SHPT_NO} not found (expected for test data)")
         print_success("TEST PASSED (404 expected)")
         return True
-    
+
     if not result["success"]:
         # Endpoint might not be implemented yet
         print_info("Endpoint not implemented yet (expected)")
         return True
-    
+
     print_success("TEST PASSED")
     return True
 
@@ -272,19 +271,19 @@ def test_4_approval_status():
 def test_5_document_events():
     """Test GET /document/events/{shptNo}"""
     print_test(f"5. GET /document/events/{TEST_SHPT_NO}")
-    
+
     result = test_endpoint("GET", f"/document/events/{TEST_SHPT_NO}")
-    
+
     if result["status_code"] == 404:
         print_info(f"No events for {TEST_SHPT_NO} (expected for test data)")
         print_success("TEST PASSED (404 expected)")
         return True
-    
+
     if not result["success"]:
         # Endpoint might not be implemented yet
         print_info("Endpoint not implemented yet (expected)")
         return True
-    
+
     print_success("TEST PASSED")
     return True
 
@@ -292,14 +291,14 @@ def test_5_document_events():
 def test_6_status_summary():
     """Test GET /status/summary"""
     print_test("6. GET /status/summary (KPI Summary)")
-    
+
     result = test_endpoint("GET", "/status/summary")
-    
+
     if not result["success"]:
         return False
-    
+
     data = result["json"]
-    
+
     # Validate KPI fields
     kpi_fields = ["totalShipments"]
     for field in kpi_fields:
@@ -307,7 +306,7 @@ def test_6_status_summary():
             print_success(f"KPI field present: {field} = {data[field]}")
         else:
             print_error(f"Missing KPI field: {field}")
-    
+
     print_success("TEST PASSED")
     return True
 
@@ -315,17 +314,17 @@ def test_6_status_summary():
 def test_7_bottleneck_summary():
     """Test GET /bottleneck/summary"""
     print_test("7. GET /bottleneck/summary")
-    
+
     result = test_endpoint("GET", "/bottleneck/summary")
-    
+
     if result["status_code"] == 404:
         print_info("Endpoint not implemented yet (expected)")
         print_success("TEST PASSED (not implemented)")
         return True
-    
+
     if not result["success"]:
         return False
-    
+
     print_success("TEST PASSED")
     return True
 
@@ -333,7 +332,7 @@ def test_7_bottleneck_summary():
 def test_8_ingest_events_valid():
     """Test POST /ingest/events (valid payload)"""
     print_test("8. POST /ingest/events (Valid Payload)")
-    
+
     payload = {
         "batchId": "TEST_BATCH_001",
         "sourceSystem": "TEST",
@@ -342,26 +341,31 @@ def test_8_ingest_events_valid():
                 "timestamp": datetime.now().isoformat() + "+04:00",
                 "shptNo": "TEST-001",
                 "entityType": "DOCUMENT",
-                "toStatus": "SUBMITTED"
+                "toStatus": "SUBMITTED",
             }
-        ]
+        ],
     }
-    
-    result = test_endpoint("POST", "/ingest/events", json=payload, headers={"Content-Type": "application/json"})
-    
+
+    result = test_endpoint(
+        "POST",
+        "/ingest/events",
+        json=payload,
+        headers={"Content-Type": "application/json"},
+    )
+
     if not result["success"]:
         # Connection might not be available
         print_info("Airtable connection not available (expected for local test)")
         return True
-    
+
     data = result["json"]
-    
+
     # Validate response
     if data.get("status") == "success":
         print_success(f"Ingested: {data.get('ingested')} events")
         if data.get("schemaVersion"):
             print_success(f"Schema version: {data['schemaVersion']}")
-    
+
     print_success("TEST PASSED")
     return True
 
@@ -369,7 +373,7 @@ def test_8_ingest_events_valid():
 def test_9_ingest_events_invalid():
     """Test POST /ingest/events (invalid fields)"""
     print_test("9. POST /ingest/events (Invalid Fields)")
-    
+
     payload = {
         "batchId": "TEST_BATCH_002",
         "sourceSystem": "TEST",
@@ -379,24 +383,31 @@ def test_9_ingest_events_invalid():
                 "shptNo": "TEST-002",
                 "invalidField": "should_fail",  # Invalid field
                 "entityType": "DOCUMENT",
-                "toStatus": "SUBMITTED"
+                "toStatus": "SUBMITTED",
             }
-        ]
+        ],
     }
-    
-    result = test_endpoint("POST", "/ingest/events", json=payload, headers={"Content-Type": "application/json"})
-    
+
+    result = test_endpoint(
+        "POST",
+        "/ingest/events",
+        json=payload,
+        headers={"Content-Type": "application/json"},
+    )
+
     if result["status_code"] == 400:
         data = result["json"]
         if data.get("error") == "Field validation failed":
             print_success("Field validation working correctly")
             if "protected_fields" in data:
-                print_success(f"Protected fields exposed: {len(data['protected_fields'])} fields")
+                print_success(
+                    f"Protected fields exposed: {len(data['protected_fields'])} fields"
+                )
             return True
     elif result["status_code"] == 503:
         print_info("Airtable connection not available (expected for local test)")
         return True
-    
+
     print_error("Field validation did not reject invalid fields")
     return False
 
@@ -409,7 +420,7 @@ def run_all_tests():
     print(f"{Colors.BLUE}Schema Version: 2025-12-25T00:32:52+0400{Colors.RESET}")
     print(f"{Colors.BLUE}API Version: 1.7.0{Colors.RESET}")
     print(f"{Colors.BLUE}{'='*70}{Colors.RESET}")
-    
+
     tests = [
         test_1_home,
         test_2_health,
@@ -421,7 +432,7 @@ def run_all_tests():
         test_8_ingest_events_valid,
         test_9_ingest_events_invalid,
     ]
-    
+
     results = []
     for test in tests:
         try:
@@ -430,20 +441,20 @@ def run_all_tests():
         except Exception as e:
             print_error(f"Test exception: {str(e)}")
             results.append(False)
-    
+
     # Summary
     print("\n")
     print(f"{Colors.BLUE}{'='*70}{Colors.RESET}")
     print(f"{Colors.BLUE}TEST SUMMARY{Colors.RESET}")
     print(f"{Colors.BLUE}{'='*70}{Colors.RESET}")
-    
+
     passed = sum(results)
     total = len(results)
-    
+
     print(f"\nTotal Tests: {total}")
     print(f"{Colors.GREEN}Passed: {passed}{Colors.RESET}")
     print(f"{Colors.RED}Failed: {total - passed}{Colors.RESET}")
-    
+
     if passed == total:
         print(f"\n{Colors.GREEN}{'='*70}{Colors.RESET}")
         print(f"{Colors.GREEN}ALL TESTS PASSED [OK]{Colors.RESET}")
@@ -452,19 +463,18 @@ def run_all_tests():
         print(f"\n{Colors.RED}{'='*70}{Colors.RESET}")
         print(f"{Colors.RED}SOME TESTS FAILED [ERROR]{Colors.RESET}")
         print(f"{Colors.RED}{'='*70}{Colors.RESET}\n")
-    
+
     return passed == total
 
 
 if __name__ == "__main__":
     import sys
-    
+
     print_info("Starting Flask server test prerequisite check...")
     print_info("Make sure Flask server is running on http://localhost:5000")
     print_info("Run: python api/document_status.py")
-    
+
     input("\nPress Enter to start tests (or Ctrl+C to cancel)...")
-    
+
     success = run_all_tests()
     sys.exit(0 if success else 1)
-
