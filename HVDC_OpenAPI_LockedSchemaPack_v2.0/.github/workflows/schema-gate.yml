@@ -1,0 +1,78 @@
+name: Schema Drift Gate
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  schema-validation:
+    name: Validate Schema Lock
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Run Schema Drift Detector
+        env:
+          API_URL: ${{ secrets.VERCEL_API_URL || 'https://gets-416ut4t8g-chas-projects-08028e73.vercel.app' }}
+        run: |
+          cd HVDC_OpenAPI_LockedSchemaPack_v2.0
+          python schema_drift_detector.py
+
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: schema-validation-report
+          path: |
+            *.log
+            validation_report.txt
+
+      - name: Block deployment on drift
+        if: failure()
+        run: |
+          echo "::error::Schema drift detected! Deployment blocked."
+          echo "Please regenerate schema lock or update OpenAPI schema."
+          exit 1
+
+  pre-deployment-check:
+    name: Pre-Deployment Gate
+    runs-on: ubuntu-latest
+    needs: schema-validation
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Verify protected fields
+        run: |
+          echo "Checking protected fields..."
+          if [ ! -f "HVDC_OpenAPI_LockedSchemaPack_v2.0/protected_fields.json" ]; then
+            echo "::error::Missing protected_fields.json"
+            exit 1
+          fi
+
+          FIELD_COUNT=$(jq '.totalProtectedFields' HVDC_OpenAPI_LockedSchemaPack_v2.0/protected_fields.json)
+          if [ "$FIELD_COUNT" -ne 20 ]; then
+            echo "::error::Expected 20 protected fields, found $FIELD_COUNT"
+            exit 1
+          fi
+
+          echo "✅ Protected fields validated: $FIELD_COUNT fields"
+
+      - name: Deployment gate passed
+        run: |
+          echo "🎉 All gates passed! Ready for deployment."
+

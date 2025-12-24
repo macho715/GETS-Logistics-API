@@ -1,0 +1,329 @@
+openapi: 3.0.3
+info:
+  title: GETS Action API (HVDC Status Ledger)
+  version: 1.7.0
+  description: |
+    Production-grade logistics API with Schema Lock and Protected Fields.
+    Locked to Airtable schema lock version for drift prevention.
+    Timezone: Asia/Dubai (+04:00).
+
+  # Schema Version (필수)
+  x-airtable-schemaVersion: 2025-12-25T00:32:52+0400
+  x-airtable-baseId: appnLz06h07aMm366
+
+  # Protected Fields (20개 명시)
+  x-protected-fields:
+    Shipments:
+      - shptNo
+      - currentBottleneckCode
+      - bottleneckSince
+      - riskLevel
+      - nextAction
+      - actionOwner
+      - dueAt
+    Documents:
+      - shptNo
+      - docType
+      - status
+    Actions:
+      - shptNo
+      - status
+      - priority
+      - dueAt
+      - actionText
+      - owner
+    Events:
+      - timestamp
+      - shptNo
+      - entityType
+      - toStatus
+
+  # Schema Gaps (문서화)
+  x-schema-gaps:
+    evidence_links: "Documents/Approvals/Actions/Events tables lack fields to link to Evidence records."
+    event_key: "Events table lacks a dedicated 'eventKey' field for robust idempotency."
+    incoterm_hs: "Shipments table lacks 'incoterm', 'hsCode2', 'hsCode6' for BOE RED detection."
+
+  # Deployment Gate Configuration
+  x-deployment-gate:
+    schema-validation: required
+    drift-detection: block-on-mismatch
+    protected-field-check: mandatory
+    ci-integration: github-actions
+
+servers:
+  - url: https://gets-416ut4t8g-chas-projects-08028e73.vercel.app
+    description: Production (Schema Lock v2025-12-25T00:32:52+0400)
+
+tags:
+  - name: Docs
+    description: Document status and document-ledger endpoints
+  - name: Health
+    description: Health check and schema validation
+
+# Locked Mapping (기존 유지)
+x-locked-mapping:
+  baseId: appnLz06h07aMm366
+  schemaVersion: 2025-12-25T00:32:52+0400
+  tables:
+    Shipments:
+      tableId: tbl4NnKYx1ECKmaaC
+      fields:
+        shptNo: fldEQ5GwNfN6dRWnI
+        currentBottleneckCode: fldIACEWXLqsorJF0
+        bottleneckSince: fldTLT6AMTi8udXrB
+        riskLevel: fldkbfmbgNi4iFJDk
+        nextAction: fldkR6PTLDfvwnJN4
+        actionOwner: fldKuqW5THvGbsSzu
+        dueAt: fldF1TqRtlxwevnVI
+    Documents:
+      tableId: tblbA8htgQSd2lOPO
+      fields:
+        shptNo: fldmRTznGzLTEu85V
+        docType: fldgN8FmlkC47Yqyf
+        status: fld8HQ6WJA5DstrNK
+    Actions:
+      tableId: tblkDpCWYORAPqxhw
+      fields:
+        shptNo: fldvQSM4Uf1ckQ107
+        actionText: fldUgpe4galkjERcY
+        owner: fldLI0zldMrrM5fJ4
+        dueAt: fldaXsyp6dNTmx56W
+        status: fldLmSWCdRprObgST
+        priority: fldX80o1udxsK6gmy
+
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check with schema validation
+      description: |
+        Returns API health status with schema version validation.
+        Use this endpoint to verify schema lock integrity before deployment.
+      operationId: getHealth
+      responses:
+        '200':
+          description: Healthy (schema version match)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, degraded]
+                  version:
+                    type: string
+                  lockedConfig:
+                    type: object
+                    properties:
+                      schemaVersion:
+                        type: string
+                      tablesLocked:
+                        type: integer
+                      versionMatch:
+                        type: boolean
+                      protectedFieldsCount:
+                        type: integer
+                  schemaGaps:
+                    type: array
+                    items:
+                      type: string
+              example:
+                status: healthy
+                version: 1.7.0
+                lockedConfig:
+                  schemaVersion: 2025-12-25T00:32:52+0400
+                  tablesLocked: 10
+                  versionMatch: true
+                  protectedFieldsCount: 20
+                schemaGaps:
+                  - "evidence_links: missing Evidence linkage"
+                  - "event_key: missing eventKey field"
+                  - "incoterm_hs: missing trade classification"
+        '503':
+          description: Schema drift detected or Airtable unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  error:
+                    type: string
+                  drift:
+                    type: object
+                    properties:
+                      expected:
+                        type: string
+                      actual:
+                        type: string
+
+  /document/status/{shptNo}:
+    get:
+      tags:
+        - Docs
+      summary: Get operational document status packet by shipment no
+      description: |
+        Returns an operational status packet (doc statuses + bottleneck + next action)
+        computed from Airtable SSOT using locked schema version.
+      operationId: getDocumentStatus
+      parameters:
+        - name: shptNo
+          in: path
+          required: true
+          description: 'Shipment number (SSOT key). Example: SCT-0143'
+          schema:
+            type: string
+          example: SCT-0143
+      responses:
+        '200':
+          description: Status packet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentStatusPacket'
+              examples:
+                ok:
+                  value:
+                    shptNo: SCT-0143
+                    doc:
+                      boeStatus: SUBMITTED
+                      doStatus: NOT_STARTED
+                      cooStatus: PENDING
+                      hblStatus: READY
+                      ciplStatus: VALID
+                    bottleneck:
+                      code: FANR_PENDING
+                      since: '2025-12-24T09:00:00+04:00'
+                      riskLevel: HIGH
+                    action:
+                      nextAction: FANR 승인 상태 확인 및 가속 요청
+                      owner: Customs/Compliance
+                      dueAt: '2025-12-25T12:00:00+04:00'
+                    meta:
+                      schemaVersion: 2025-12-25T00:32:52+0400
+                      airtableBaseId: appnLz06h07aMm366
+        '404':
+          description: Shipment not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    DocumentStatusPacket:
+      type: object
+      required:
+        - shptNo
+        - doc
+        - bottleneck
+      properties:
+        shptNo:
+          type: string
+          description: Shipments.shptNo (tbl4NnKYx1ECKmaaC.fldEQ5GwNfN6dRWnI)
+        doc:
+          $ref: '#/components/schemas/DocStatusSummary'
+        bottleneck:
+          $ref: '#/components/schemas/Bottleneck'
+        action:
+          $ref: '#/components/schemas/NextAction'
+          nullable: true
+        meta:
+          type: object
+          nullable: true
+          properties:
+            schemaVersion:
+              type: string
+              example: 2025-12-25T00:32:52+0400
+            airtableBaseId:
+              type: string
+              example: appnLz06h07aMm366
+
+    DocStatusSummary:
+      type: object
+      description: Derived from Documents.status filtered by docType
+      properties:
+        boeStatus:
+          $ref: '#/components/schemas/DocStatus'
+        doStatus:
+          $ref: '#/components/schemas/DocStatus'
+        cooStatus:
+          $ref: '#/components/schemas/DocStatus'
+        hblStatus:
+          $ref: '#/components/schemas/DocStatus'
+        ciplStatus:
+          $ref: '#/components/schemas/DocStatus'
+
+    DocStatus:
+      type: string
+      description: Airtable singleSelect value from Documents.status
+      example: SUBMITTED
+
+    Bottleneck:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Shipments.currentBottleneckCode (fldIACEWXLqsorJF0)
+        since:
+          type: string
+          format: date-time
+          nullable: true
+          description: Shipments.bottleneckSince (fldTLT6AMTi8udXrB)
+        riskLevel:
+          type: string
+          nullable: true
+          description: Shipments.riskLevel (fldkbfmbgNi4iFJDk)
+
+    NextAction:
+      type: object
+      properties:
+        nextAction:
+          type: string
+          nullable: true
+          description: Shipments.nextAction or Actions.actionText
+        owner:
+          type: string
+          nullable: true
+          description: Shipments.actionOwner or Actions.owner
+        dueAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Shipments.dueAt or Actions.dueAt
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: NOT_FOUND
+        message:
+          type: string
+          example: Shipment not found
+        shptNo:
+          type: string
+          nullable: true
+        details:
+          type: object
+          nullable: true
+

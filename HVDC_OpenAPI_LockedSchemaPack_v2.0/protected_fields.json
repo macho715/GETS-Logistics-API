@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "2025-12-25T00:32:52+0400",
+  "baseId": "appnLz06h07aMm366",
+  "protectedFields": {
+    "Shipments": {
+      "fields": [
+        {
+          "name": "shptNo",
+          "fieldId": "fldEQ5GwNfN6dRWnI",
+          "reason": "Primary key for SSOT queries",
+          "usedIn": ["filterByFormula", "API key"]
+        },
+        {
+          "name": "currentBottleneckCode",
+          "fieldId": "fldIACEWXLqsorJF0",
+          "reason": "Critical for bottleneck analysis",
+          "usedIn": ["filterByFormula", "KPI calculations"]
+        },
+        {
+          "name": "bottleneckSince",
+          "fieldId": "fldTLT6AMTi8udXrB",
+          "reason": "Aging calculation dependency",
+          "usedIn": ["filterByFormula", "aging reports"]
+        },
+        {
+          "name": "riskLevel",
+          "fieldId": "fldkbfmbgNi4iFJDk",
+          "reason": "Risk categorization",
+          "usedIn": ["filterByFormula", "alert triggers"]
+        },
+        {
+          "name": "nextAction",
+          "fieldId": "fldkR6PTLDfvwnJN4",
+          "reason": "Action recommendation",
+          "usedIn": ["API response"]
+        },
+        {
+          "name": "actionOwner",
+          "fieldId": "fldKuqW5THvGbsSzu",
+          "reason": "Owner assignment",
+          "usedIn": ["API response", "notifications"]
+        },
+        {
+          "name": "dueAt",
+          "fieldId": "fldF1TqRtlxwevnVI",
+          "reason": "SLA tracking",
+          "usedIn": ["filterByFormula", "deadline alerts"]
+        }
+      ]
+    },
+    "Documents": {
+      "fields": [
+        {
+          "name": "shptNo",
+          "fieldId": "fldmRTznGzLTEu85V",
+          "reason": "Foreign key to Shipments",
+          "usedIn": ["filterByFormula", "joins"]
+        },
+        {
+          "name": "docType",
+          "fieldId": "fldgN8FmlkC47Yqyf",
+          "reason": "Document categorization",
+          "usedIn": ["filterByFormula", "doc status mapping"]
+        },
+        {
+          "name": "status",
+          "fieldId": "fld8HQ6WJA5DstrNK",
+          "reason": "Document status tracking",
+          "usedIn": ["API response", "KPI calculations"]
+        }
+      ]
+    },
+    "Actions": {
+      "fields": [
+        {
+          "name": "shptNo",
+          "fieldId": "fldvQSM4Uf1ckQ107",
+          "reason": "Foreign key to Shipments",
+          "usedIn": ["filterByFormula", "joins"]
+        },
+        {
+          "name": "status",
+          "fieldId": "fldLmSWCdRprObgST",
+          "reason": "Action status tracking",
+          "usedIn": ["filterByFormula", "task management"]
+        },
+        {
+          "name": "priority",
+          "fieldId": "fldX80o1udxsK6gmy",
+          "reason": "Priority sorting",
+          "usedIn": ["filterByFormula", "action ranking"]
+        },
+        {
+          "name": "dueAt",
+          "fieldId": "fldaXsyp6dNTmx56W",
+          "reason": "Deadline tracking",
+          "usedIn": ["filterByFormula", "overdue detection"]
+        },
+        {
+          "name": "actionText",
+          "fieldId": "fldUgpe4galkjERcY",
+          "reason": "Action description",
+          "usedIn": ["API response"]
+        },
+        {
+          "name": "owner",
+          "fieldId": "fldLI0zldMrrM5fJ4",
+          "reason": "Action owner",
+          "usedIn": ["API response", "notifications"]
+        }
+      ]
+    },
+    "Events": {
+      "fields": [
+        {
+          "name": "timestamp",
+          "fieldId": "fldTimestamp123",
+          "reason": "Event ordering and deduplication",
+          "usedIn": ["filterByFormula", "timeline", "idempotency key"]
+        },
+        {
+          "name": "shptNo",
+          "fieldId": "fldShptNoEvents",
+          "reason": "Foreign key to Shipments",
+          "usedIn": ["filterByFormula", "event filtering"]
+        },
+        {
+          "name": "entityType",
+          "fieldId": "fldEntityType456",
+          "reason": "Event categorization",
+          "usedIn": ["filterByFormula", "event filtering"]
+        },
+        {
+          "name": "toStatus",
+          "fieldId": "fldToStatus789",
+          "reason": "Status change tracking",
+          "usedIn": ["API response", "audit trail"]
+        }
+      ]
+    }
+  },
+  "totalProtectedFields": 20,
+  "lastValidated": "2025-12-25T00:32:52+0400"
+}
+
