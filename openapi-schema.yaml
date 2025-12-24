@@ -1,34 +1,43 @@
 openapi: 3.1.0
 info:
-  title: GETS Action API
-  version: 1.2.0
+  title: GETS Logistics API
+  version: 1.4.0
   description: |
-    Retrieves logistics shipment document status and KPI summary.
-    Used by the Project Logistics Assistant GPT to analyze and summarize shipment progress.
+    HVDC Project Logistics API (SpecPack v1.0)
+    
+    Provides operational status packets for shipment document tracking,
+    approval management, bottleneck analysis, and KPI monitoring.
+    
+    Timezone: Asia/Dubai (+04:00)
+    Data Source: Airtable (Real-time)
 
 servers:
-  - url: https://gets-81qyq85bh-chas-projects-08028e73.vercel.app
-    description: Production server (Vercel)
+  - url: https://gets-m775824u0-chas-projects-08028e73.vercel.app
+    description: Production server (Vercel) - SpecPack v1.0
 
 paths:
   /document/status/{shptNo}:
     get:
-      summary: Get document status by SHPT NO
-      operationId: getDocumentStatusByShptNo
+      summary: Get document status packet
+      operationId: getDocumentStatus
       description: |
-        Retrieves the document readiness status for a specific shipment number.
-        Returns BOE, DO, COO, HBL, and CIPL status information.
+        Returns operational status packet for a shipment including:
+        - Document status (BOE, DO, COO, HBL, CIPL)
+        - Bottleneck analysis (code, since, risk level)
+        - Next action (description, owner, due date)
+        - Evidence references
+        - Data lag metrics
       parameters:
         - name: shptNo
           in: path
           required: true
-          description: Shipment number (e.g., HVDC-ADOPT-SIM-0065)
+          description: Shipment number (e.g., SCT-0143)
           schema:
             type: string
-            example: HVDC-ADOPT-SIM-0065
+          example: SCT-0143
       responses:
         '200':
-          description: Successful response with document status
+          description: Success
           content:
             application/json:
               schema:
@@ -36,104 +45,262 @@ paths:
                 properties:
                   shptNo:
                     type: string
-                    description: Shipment number
-                  boeStatus:
-                    type: string
-                    description: Bill of Entry status
-                  doStatus:
-                    type: string
-                    description: Delivery Order status
-                  cooReady:
-                    type: string
-                    description: Certificate of Origin readiness
-                  hblReady:
-                    type: string
-                    description: House Bill of Lading readiness
-                  ciplValid:
-                    type: string
-                    description: CIPL validity status
-                  lastUpdated:
-                    type: string
-                    format: date-time
-                    description: Last update timestamp
+                  doc:
+                    type: object
+                    properties:
+                      boeStatus:
+                        type: string
+                      doStatus:
+                        type: string
+                      cooStatus:
+                        type: string
+                      hblStatus:
+                        type: string
+                      ciplStatus:
+                        type: string
+                  bottleneck:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      since:
+                        type: string
+                      riskLevel:
+                        type: string
+                  action:
+                    type: object
+                    properties:
+                      nextAction:
+                        type: string
+                      owner:
+                        type: string
+                      dueAt:
+                        type: string
+                  evidence:
+                    type: array
+                    items:
+                      type: object
+                  meta:
+                    type: object
+                    properties:
+                      dataLagMinutes:
+                        type: integer
+                      lastUpdated:
+                        type: string
               example:
-                shptNo: "HVDC-ADOPT-SIM-0065"
-                boeStatus: "Released"
-                doStatus: "Issued"
-                cooReady: "Ready"
-                hblReady: "Ready"
-                ciplValid: "Valid"
-                lastUpdated: "2025-12-24T19:30:00Z"
+                shptNo: "SCT-0143"
+                doc:
+                  boeStatus: "SUBMITTED"
+                  doStatus: "NOT_STARTED"
+                  cooStatus: "PENDING"
+                  hblStatus: "READY"
+                  ciplStatus: "VALID"
+                bottleneck:
+                  code: "FANR_PENDING"
+                  since: "2025-12-24T09:00:00+04:00"
+                  riskLevel: "HIGH"
+                action:
+                  nextAction: "FANR 승인 상태 확인 및 가속 요청"
+                  owner: "Customs/Compliance"
+                  dueAt: "2025-12-25T12:00:00+04:00"
+                evidence: []
+                meta:
+                  dataLagMinutes: 900
+                  lastUpdated: "2025-12-25T00:00:00+04:00"
         '404':
           description: Shipment not found
 
-  /status/summary:
+  /approval/status/{shptNo}:
     get:
-      summary: Get overall shipment status summary
-      operationId: getStatusSummary
+      summary: Get approval status
+      operationId: getApprovalStatus
       description: |
-        Returns aggregated KPI metrics for all shipments including:
-        - Total shipment count
-        - Completion rates for each document type
-        - Lists of pending and at-risk shipments
+        Returns approval tracking information for a shipment including:
+        - Approval type (FANR, MOEI, MOIAT, etc.)
+        - Status (SUBMITTED, PENDING, APPROVED, etc.)
+        - Timeline (submitted, due dates)
+        - Owner information
+        - Evidence references
+      parameters:
+        - name: shptNo
+          in: path
+          required: true
+          description: Shipment number
+          schema:
+            type: string
+          example: SCT-0143
       responses:
         '200':
-          description: Successful response with KPI summary
+          description: Success
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  totalShipments:
-                    type: integer
-                    description: Total number of shipments
-                  ciplRate:
-                    type: number
-                    format: float
-                    description: CIPL completion rate (0.0 to 1.0)
-                  hblRate:
-                    type: number
-                    format: float
-                    description: HBL completion rate
-                  cooRate:
-                    type: number
-                    format: float
-                    description: COO completion rate
-                  doRate:
-                    type: number
-                    format: float
-                    description: DO completion rate
-                  boeRate:
-                    type: number
-                    format: float
-                    description: BOE completion rate
-                  pendingBOE:
+                  shptNo:
+                    type: string
+                  approvals:
                     type: array
                     items:
-                      type: string
-                    description: List of shipments with pending BOE
-                  upcomingRisk:
-                    type: array
-                    items:
-                      type: string
-                    description: List of shipments at risk
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        status:
+                          type: string
+                        submittedAt:
+                          type: string
+                        dueAt:
+                          type: string
+                        owner:
+                          type: string
+                        evidenceIds:
+                          type: array
+                          items:
+                            type: string
                   lastUpdated:
                     type: string
-                    format: date-time
-                    description: Last update timestamp
-              example:
-                totalShipments: 73
-                ciplRate: 0.88
-                hblRate: 0.75
-                cooRate: 0.70
-                doRate: 0.52
-                boeRate: 0.41
-                pendingBOE:
-                  - "HVDC-ADOPT-SIM-0065"
-                  - "HVDC-ADOPT-SCT-0041"
-                upcomingRisk:
-                  - "HVDC-ADOPT-SCT-0058"
-                lastUpdated: "2025-12-24T19:30:00Z"
+
+  /document/events/{shptNo}:
+    get:
+      summary: Get event history
+      operationId: getDocumentEvents
+      description: |
+        Returns append-only event ledger for a shipment.
+        Useful for audit trail and timeline analysis.
+      parameters:
+        - name: shptNo
+          in: path
+          required: true
+          description: Shipment number
+          schema:
+            type: string
+          example: SCT-0143
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shptNo:
+                    type: string
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        eventId:
+                          type: integer
+                        timestamp:
+                          type: string
+                        entityType:
+                          type: string
+                        fromStatus:
+                          type: string
+                        toStatus:
+                          type: string
+                        bottleneckCode:
+                          type: string
+                        actor:
+                          type: string
+                        sourceSystem:
+                          type: string
+                  totalEvents:
+                    type: integer
+                  lastUpdated:
+                    type: string
+
+  /status/summary:
+    get:
+      summary: Get overall KPI summary
+      operationId: getStatusSummary
+      description: |
+        Returns aggregated KPI metrics including:
+        - Total shipment count
+        - Document completion rates
+        - Risk distribution
+        - Top bottlenecks
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dataSource:
+                    type: string
+                  totalShipments:
+                    type: integer
+                  boeRate:
+                    type: number
+                  doRate:
+                    type: number
+                  cooRate:
+                    type: number
+                  hblRate:
+                    type: number
+                  ciplRate:
+                    type: number
+                  riskSummary:
+                    type: object
+                    properties:
+                      LOW:
+                        type: integer
+                      MEDIUM:
+                        type: integer
+                      HIGH:
+                        type: integer
+                      CRITICAL:
+                        type: integer
+                  topBottlenecks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        count:
+                          type: integer
+                  lastUpdated:
+                    type: string
+
+  /bottleneck/summary:
+    get:
+      summary: Get bottleneck analysis
+      operationId: getBottleneckSummary
+      description: |
+        Returns detailed bottleneck analysis including:
+        - Bottleneck counts by code
+        - Detailed shipment lists per bottleneck
+        - Aging distribution (24h, 48h, 72h buckets)
+        - Risk levels
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bottlenecks:
+                    type: object
+                  details:
+                    type: object
+                  agingDistribution:
+                    type: object
+                    properties:
+                      under_24h:
+                        type: integer
+                      24h_to_48h:
+                        type: integer
+                      48h_to_72h:
+                        type: integer
+                      over_72h:
+                        type: integer
+                  lastUpdated:
+                    type: string
 
 # No authentication required - API is public
-

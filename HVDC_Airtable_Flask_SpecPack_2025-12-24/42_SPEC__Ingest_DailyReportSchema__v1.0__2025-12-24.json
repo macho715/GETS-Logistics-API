@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HVDC Ingest Daily Report Schema v1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "reportDate",
+    "batchId",
+    "sourceSystem",
+    "timezone"
+  ],
+  "properties": {
+    "reportDate": {
+      "type": "string",
+      "description": "YYYY-MM-DD"
+    },
+    "batchId": {
+      "type": "string"
+    },
+    "sourceSystem": {
+      "type": "string"
+    },
+    "timezone": {
+      "type": "string",
+      "const": "Asia/Dubai"
+    },
+    "shipments": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "nullable": true
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "nullable": true
+    },
+    "approvals": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "nullable": true
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "nullable": true
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      },
+      "nullable": true
+    }
+  }
+}
