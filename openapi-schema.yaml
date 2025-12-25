@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
   title: GETS Logistics API
-  version: 1.5.0
+  version: 1.8.0
   description: |
-    HVDC Project Logistics API (SpecPack v1.0 + Production Client)
+    HVDC Project Logistics API (Phase 4.1 + Approval/Bottleneck Endpoints)
 
     Provides operational status packets for shipment document tracking,
     approval management, bottleneck analysis, and KPI monitoring.
@@ -14,15 +14,193 @@ info:
     - Retry logic (429, 503)
     - Batch operations (≤10 records/req)
     - Upsert support (idempotent ingest)
+    - rename-safe: fieldId-based parsing
+    - D-5/D-15 SLA classification
+    - Timezone normalization (Z/UTC support)
 
     Timezone: Asia/Dubai (+04:00)
     Data Source: Airtable (Real-time)
+    Schema Version: 2025-12-25T00:32:52+0400
 
 servers:
-  - url: https://gets-cofgcl0hc-chas-projects-08028e73.vercel.app
-    description: Production server (Vercel) - Phase 2.1
+  - url: https://gets-416ut4t8g-chas-projects-08028e73.vercel.app
+    description: Production server (Vercel) - Phase 4.1
 
 paths:
+  /approval/status/{shptNo}:
+    get:
+      summary: Get approval status for shipment
+      operationId: getApprovalStatus
+      description: Returns approval details with D-5/D-15 SLA analysis and priority classification.
+      parameters:
+        - name: shptNo
+          in: path
+          required: true
+          description: Shipment number (e.g., SCT-0143)
+          schema:
+            type: string
+          example: SCT-0143
+      responses:
+        '200':
+          description: Approval status retrieved (may have empty approvals array)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shptNo:
+                    type: string
+                  approvals:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        approvalKey:
+                          type: string
+                        approvalType:
+                          type: string
+                        status:
+                          type: string
+                        dueAt:
+                          type: string
+                        daysUntilDue:
+                          type: number
+                        priority:
+                          type: string
+                  summary:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      pending:
+                        type: integer
+                      approved:
+                        type: integer
+                      critical:
+                        type: integer
+                  schemaVersion:
+                    type: string
+        '404':
+          description: Shipment not found
+        '503':
+          description: Service unavailable
+
+  /approval/summary:
+    get:
+      summary: Get global approval summary
+      operationId: getApprovalSummary
+      description: Returns statistics by type and SLA status (D-15/D-5/overdue) for all approvals.
+      responses:
+        '200':
+          description: Approval summary retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      pending:
+                        type: integer
+                  byType:
+                    type: object
+                  critical:
+                    type: object
+                    properties:
+                      overdue:
+                        type: integer
+                      d5:
+                        type: integer
+                      d15:
+                        type: integer
+        '503':
+          description: Service unavailable
+
+  /bottleneck/summary:
+    get:
+      summary: Get bottleneck analysis
+      operationId: getBottleneckSummary
+      description: Returns bottleneck statistics with aging distribution (24h/48h/72h+) and top-N list.
+      responses:
+        '200':
+          description: Bottleneck summary retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  byCategory:
+                    type: object
+                  byCode:
+                    type: object
+                  aging:
+                    type: object
+                    properties:
+                      under24h:
+                        type: integer
+                      under48h:
+                        type: integer
+                      under72h:
+                        type: integer
+                      over72h:
+                        type: integer
+                  topBottlenecks:
+                    type: array
+                    items:
+                      type: object
+                  totalActive:
+                    type: integer
+        '503':
+          description: Service unavailable
+
+  /document/events/{shptNo}:
+    get:
+      summary: Get event history for shipment
+      operationId: getDocumentEvents
+      description: Returns chronological event history (latest first) for document state transitions.
+      parameters:
+        - name: shptNo
+          in: path
+          required: true
+          description: Shipment number (e.g., SCT-0143)
+          schema:
+            type: string
+          example: SCT-0143
+      responses:
+        '200':
+          description: Events retrieved (may be empty array)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shptNo:
+                    type: string
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        eventId:
+                          type: integer
+                        timestamp:
+                          type: string
+                        entityType:
+                          type: string
+                        fromStatus:
+                          type: string
+                        toStatus:
+                          type: string
+                  total:
+                    type: integer
+        '404':
+          description: Shipment not found
+        '503':
+          description: Service unavailable
+
   /document/status/{shptNo}:
     get:
       summary: Get document status packet

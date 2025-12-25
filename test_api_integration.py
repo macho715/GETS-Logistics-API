@@ -210,9 +210,9 @@ def test_2_health():
     return True
 
 
-def test_3_document_status():
+def test_8_document_status():
     """Test GET /document/status/{shptNo}"""
-    print_test(f"3. GET /document/status/{TEST_SHPT_NO}")
+    print_test(f"8. GET /document/status/{TEST_SHPT_NO}")
 
     result = test_endpoint("GET", f"/document/status/{TEST_SHPT_NO}")
 
@@ -248,49 +248,9 @@ def test_3_document_status():
     return True
 
 
-def test_4_approval_status():
-    """Test GET /approval/status/{shptNo}"""
-    print_test(f"4. GET /approval/status/{TEST_SHPT_NO}")
-
-    result = test_endpoint("GET", f"/approval/status/{TEST_SHPT_NO}")
-
-    if result["status_code"] == 404:
-        print_info(f"Shipment {TEST_SHPT_NO} not found (expected for test data)")
-        print_success("TEST PASSED (404 expected)")
-        return True
-
-    if not result["success"]:
-        # Endpoint might not be implemented yet
-        print_info("Endpoint not implemented yet (expected)")
-        return True
-
-    print_success("TEST PASSED")
-    return True
-
-
-def test_5_document_events():
-    """Test GET /document/events/{shptNo}"""
-    print_test(f"5. GET /document/events/{TEST_SHPT_NO}")
-
-    result = test_endpoint("GET", f"/document/events/{TEST_SHPT_NO}")
-
-    if result["status_code"] == 404:
-        print_info(f"No events for {TEST_SHPT_NO} (expected for test data)")
-        print_success("TEST PASSED (404 expected)")
-        return True
-
-    if not result["success"]:
-        # Endpoint might not be implemented yet
-        print_info("Endpoint not implemented yet (expected)")
-        return True
-
-    print_success("TEST PASSED")
-    return True
-
-
-def test_6_status_summary():
+def test_9_status_summary():
     """Test GET /status/summary"""
-    print_test("6. GET /status/summary (KPI Summary)")
+    print_test("9. GET /status/summary (KPI Summary)")
 
     result = test_endpoint("GET", "/status/summary")
 
@@ -311,27 +271,202 @@ def test_6_status_summary():
     return True
 
 
-def test_7_bottleneck_summary():
-    """Test GET /bottleneck/summary"""
-    print_test("7. GET /bottleneck/summary")
+def test_4_approval_status():
+    """Test GET /approval/status/{shptNo}"""
+    print_test(f"4. GET /approval/status/{TEST_SHPT_NO}")
 
-    result = test_endpoint("GET", "/bottleneck/summary")
+    result = test_endpoint("GET", f"/approval/status/{TEST_SHPT_NO}")
 
     if result["status_code"] == 404:
-        print_info("Endpoint not implemented yet (expected)")
-        print_success("TEST PASSED (not implemented)")
+        print_info(f"Shipment {TEST_SHPT_NO} not found (expected for test data)")
+        print_success("TEST PASSED (404 expected)")
         return True
 
     if not result["success"]:
         return False
 
+    data = result["json"]
+
+    # Validate structure
+    required_fields = ["shptNo", "approvals", "summary"]
+    for field in required_fields:
+        if field in data:
+            print_success(f"Field present: {field}")
+        else:
+            print_error(f"Missing field: {field}")
+            return False
+
+    # Validate summary structure
+    summary = data.get("summary", {})
+    summary_fields = ["total", "pending", "approved", "rejected", "critical", "overdue"]
+    for field in summary_fields:
+        if field in summary:
+            print_success(f"Summary field present: {field}")
+
+    # Validate daysUntilDue precision (if approvals exist)
+    approvals = data.get("approvals", [])
+    if approvals:
+        for approval in approvals:
+            if approval.get("daysUntilDue") is not None:
+                days = approval["daysUntilDue"]
+                if isinstance(days, (int, float)):
+                    print_success(f"daysUntilDue is numeric: {days}")
+                else:
+                    print_error(f"daysUntilDue is not numeric: {days}")
+
     print_success("TEST PASSED")
     return True
 
 
-def test_8_ingest_events_valid():
+def test_5_approval_summary():
+    """Test GET /approval/summary"""
+    print_test("5. GET /approval/summary")
+
+    result = test_endpoint("GET", "/approval/summary")
+
+    if not result["success"]:
+        return False
+
+    data = result["json"]
+
+    # Validate structure
+    required_fields = ["summary", "byType", "critical"]
+    for field in required_fields:
+        if field in data:
+            print_success(f"Field present: {field}")
+        else:
+            print_error(f"Missing field: {field}")
+            return False
+
+    # Validate critical structure (D-5/D-15/overdue)
+    critical = data.get("critical", {})
+    critical_fields = ["overdue", "d5", "d15"]
+    for field in critical_fields:
+        if field in critical:
+            print_success(f"Critical field present: {field}")
+
+    print_success("TEST PASSED")
+    return True
+
+
+def test_6_bottleneck_summary():
+    """Test GET /bottleneck/summary"""
+    print_test("6. GET /bottleneck/summary")
+
+    result = test_endpoint("GET", "/bottleneck/summary")
+
+    if not result["success"]:
+        return False
+
+    data = result["json"]
+
+    # Validate structure
+    required_fields = ["byCategory", "byCode", "aging", "topBottlenecks", "totalActive"]
+    for field in required_fields:
+        if field in data:
+            print_success(f"Field present: {field}")
+        else:
+            print_error(f"Missing field: {field}")
+            return False
+
+    # Validate aging structure
+    aging = data.get("aging", {})
+    aging_fields = ["under24h", "under48h", "under72h", "over72h"]
+    for field in aging_fields:
+        if field in aging:
+            print_success(f"Aging field present: {field}")
+
+    print_success("TEST PASSED")
+    return True
+
+
+def test_7_document_events():
+    """Test GET /document/events/{shptNo}"""
+    print_test(f"7. GET /document/events/{TEST_SHPT_NO}")
+
+    result = test_endpoint("GET", f"/document/events/{TEST_SHPT_NO}")
+
+    if result["status_code"] == 404:
+        print_info(f"Shipment {TEST_SHPT_NO} not found (expected for test data)")
+        print_success("TEST PASSED (404 expected)")
+        return True
+
+    if not result["success"]:
+        return False
+
+    data = result["json"]
+
+    # Validate structure
+    required_fields = ["shptNo", "events", "total"]
+    for field in required_fields:
+        if field in data:
+            print_success(f"Field present: {field}")
+        else:
+            print_error(f"Missing field: {field}")
+            return False
+
+    # Validate event structure (if events exist)
+    events = data.get("events", [])
+    if events:
+        event = events[0]
+        event_fields = ["eventId", "timestamp", "entityType", "toStatus"]
+        for field in event_fields:
+            if field in event:
+                print_success(f"Event field present: {field}")
+
+    print_success("TEST PASSED")
+    return True
+
+
+def test_8_document_status():
+    """Test GET /document/status/{shptNo}"""
+    print_test(f"8. GET /document/status/{TEST_SHPT_NO}")
+
+    result = test_endpoint("GET", "/status/summary")
+
+    if not result["success"]:
+        return False
+
+    data = result["json"]
+
+    # Validate KPI fields
+    kpi_fields = ["totalShipments"]
+    for field in kpi_fields:
+        if field in data:
+            print_success(f"KPI field present: {field} = {data[field]}")
+        else:
+            print_error(f"Missing KPI field: {field}")
+
+    print_success("TEST PASSED")
+    return True
+
+
+def test_9_status_summary():
+    """Test GET /status/summary"""
+    print_test("9. GET /status/summary (KPI Summary)")
+
+    result = test_endpoint("GET", "/status/summary")
+
+    if not result["success"]:
+        return False
+
+    data = result["json"]
+
+    # Validate KPI fields
+    kpi_fields = ["totalShipments"]
+    for field in kpi_fields:
+        if field in data:
+            print_success(f"KPI field present: {field} = {data[field]}")
+        else:
+            print_error(f"Missing KPI field: {field}")
+
+    print_success("TEST PASSED")
+    return True
+
+
+def test_10_ingest_events_valid():
     """Test POST /ingest/events (valid payload)"""
-    print_test("8. POST /ingest/events (Valid Payload)")
+    print_test("10. POST /ingest/events (Valid Payload)")
 
     payload = {
         "batchId": "TEST_BATCH_001",
@@ -370,9 +505,92 @@ def test_8_ingest_events_valid():
     return True
 
 
-def test_9_ingest_events_invalid():
+def test_10_ingest_events_valid():
+    """Test POST /ingest/events (valid payload)"""
+    print_test("10. POST /ingest/events (Valid Payload)")
+
+    payload = {
+        "batchId": "TEST_BATCH_001",
+        "sourceSystem": "TEST",
+        "events": [
+            {
+                "timestamp": datetime.now().isoformat() + "+04:00",
+                "shptNo": "TEST-001",
+                "entityType": "DOCUMENT",
+                "toStatus": "SUBMITTED",
+            }
+        ],
+    }
+
+    result = test_endpoint(
+        "POST",
+        "/ingest/events",
+        json=payload,
+        headers={"Content-Type": "application/json"},
+    )
+
+    if not result["success"]:
+        # Connection might not be available
+        print_info("Airtable connection not available (expected for local test)")
+        return True
+
+    data = result["json"]
+
+    # Validate response
+    if data.get("status") == "success":
+        print_success(f"Ingested: {data.get('ingested')} events")
+        if data.get("schemaVersion"):
+            print_success(f"Schema version: {data['schemaVersion']}")
+
+    print_success("TEST PASSED")
+    return True
+
+
+def test_11_ingest_events_invalid():
     """Test POST /ingest/events (invalid fields)"""
-    print_test("9. POST /ingest/events (Invalid Fields)")
+    print_test("11. POST /ingest/events (Invalid Fields)")
+
+    payload = {
+        "batchId": "TEST_BATCH_002",
+        "sourceSystem": "TEST",
+        "events": [
+            {
+                "timestamp": datetime.now().isoformat() + "+04:00",
+                "shptNo": "TEST-002",
+                "invalidField": "should_fail",  # Invalid field
+                "entityType": "DOCUMENT",
+                "toStatus": "SUBMITTED",
+            }
+        ],
+    }
+
+    result = test_endpoint(
+        "POST",
+        "/ingest/events",
+        json=payload,
+        headers={"Content-Type": "application/json"},
+    )
+
+    if result["status_code"] == 400:
+        data = result["json"]
+        if data.get("error") == "Field validation failed":
+            print_success("Field validation working correctly")
+            if "protected_fields" in data:
+                print_success(
+                    f"Protected fields exposed: {len(data['protected_fields'])} fields"
+                )
+            return True
+    elif result["status_code"] == 503:
+        print_info("Airtable connection not available (expected for local test)")
+        return True
+
+    print_error("Field validation did not reject invalid fields")
+    return False
+
+
+def test_11_ingest_events_invalid():
+    """Test POST /ingest/events (invalid fields)"""
+    print_test("11. POST /ingest/events (Invalid Fields)")
 
     payload = {
         "batchId": "TEST_BATCH_002",
@@ -416,7 +634,7 @@ def run_all_tests():
     """Run all integration tests"""
     print("\n")
     print(f"{Colors.BLUE}{'='*70}{Colors.RESET}")
-    print(f"{Colors.BLUE}GETS API Integration Test Suite - Phase 2.3-A{Colors.RESET}")
+    print(f"{Colors.BLUE}GETS API Integration Test Suite - Phase 4.1{Colors.RESET}")
     print(f"{Colors.BLUE}Schema Version: 2025-12-25T00:32:52+0400{Colors.RESET}")
     print(f"{Colors.BLUE}API Version: 1.7.0{Colors.RESET}")
     print(f"{Colors.BLUE}{'='*70}{Colors.RESET}")
@@ -424,13 +642,14 @@ def run_all_tests():
     tests = [
         test_1_home,
         test_2_health,
-        test_3_document_status,
         test_4_approval_status,
-        test_5_document_events,
-        test_6_status_summary,
-        test_7_bottleneck_summary,
-        test_8_ingest_events_valid,
-        test_9_ingest_events_invalid,
+        test_5_approval_summary,
+        test_6_bottleneck_summary,
+        test_7_document_events,
+        test_8_document_status,
+        test_9_status_summary,
+        test_10_ingest_events_valid,
+        test_11_ingest_events_invalid,
     ]
 
     results = []

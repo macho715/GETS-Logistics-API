@@ -8,12 +8,22 @@ from enum import Enum
 # Import production-ready Airtable client and locked configuration (Phase 2.3)
 from api.airtable_client import AirtableClient
 from api.schema_validator import SchemaValidator
+from api.utils import (
+    parse_iso_any,
+    iso_dubai,
+    now_dubai as now_dubai_utils,
+    days_until,
+    classify_priority,
+    extract_field_by_id,
+    DUBAI_TZ as DUBAI_TZ_UTILS,
+)
 from airtable_locked_config import (
     BASE_ID,
     TABLES,
     SCHEMA_VERSION,
     PROTECTED_FIELDS,
     SCHEMA_GAPS,
+    FIELD_IDS,
 )
 
 app = Flask(__name__)
@@ -688,6 +698,617 @@ def get_bottleneck_summary():
     )
 
 
+# ==================== Approval Endpoints (Phase 4.1) ====================
+@app.route("/approval/status/<shptNo>", methods=["GET"])
+def get_approval_status(shptNo: str):
+    """
+    GET /approval/status/{shptNo}
+    
+    Returns approval status with D-5/D-15 SLA analysis
+    
+    Returns:
+    - 200: Approval data (may have empty approvals array)
+    - 404: Shipment not found
+    - 503: Airtable unavailable
+    
+    Features:
+    - rename-safe: uses fieldId for parsing
+    - D-5/D-15 SLA classification
+    - Days until due (2 decimal precision)
+    - Summary statistics
+    """
+    if not airtable_client:
+        return jsonify({
+            "error": "Airtable connection not available",
+            "status": "service_unavailable",
+            "timestamp": now_dubai()
+        }), 503
+    
+    try:
+        # Step 1: Verify shipment exists (404 if not found)
+        shipment_filter = f"{{shptNo}}='{shptNo}'"
+        
+        shipments = airtable_client.list_records(
+            table_id=TABLES["Shipments"],
+            filter_by_formula=shipment_filter,
+            fields=["shptNo"]
+        )
+        
+        if not shipments:
+            return jsonify({
+                "error": "Shipment not found",
+                "shptNo": shptNo,
+                "timestamp": now_dubai(),
+                "schemaVersion": SCHEMA_VERSION
+            }), 404
+        
+        # Step 2: Fetch approvals (may be empty array → 200 OK)
+        approval_filter = f"{{shptNo}}='{shptNo}'"
+        
+        approvals_raw = airtable_client.list_records(
+            table_id=TABLES["Approvals"],
+            filter_by_formula=approval_filter,
+            fields=[
+                "approvalKey", "shptNo", "approvalType", "status",
+                "dueAt", "submittedAt", "approvedAt", "owner", "remarks"
+            ]
+        )
+        
+        # Step 3: Parse and calculate (fieldId-based for rename safety)
+        now = datetime.now(DUBAI_TZ)
+        approvals = []
+        summary = {
+            "total": len(approvals_raw),
+            "pending": 0,
+            "approved": 0,
+            "rejected": 0,
+            "expired": 0,
+            "critical": 0,
+            "overdue": 0
+        }
+        
+        for record in approvals_raw:
+            fields = record.get("fields", {})
+            
+            # Extract using fieldId (from FIELD_IDS in airtable_locked_config.py)
+            # Fallback to field name for backward compatibility
+            approval_key = extract_field_by_id(
+                fields, 
+                FIELD_IDS["Approvals"]["approvalKey"], 
+                "approvalKey"
+            )
+            approval_type = extract_field_by_id(
+                fields,
+                FIELD_IDS["Approvals"]["approvalType"],
+                "approvalType"
+            )
+            status = extract_field_by_id(
+                fields,
+                FIELD_IDS["Approvals"]["status"],
+                "status"
+            )
+            due_at_str = extract_field_by_id(
+                fields,
+                FIELD_IDS["Approvals"]["dueAt"],
+                "dueAt"
+            )
+            submitted_at_str = extract_field_by_id(
+                fields,
+                FIELD_IDS["Approvals"]["submittedAt"],
+                "submittedAt"
+            )
+            approved_at_str = extract_field_by_id(
+                fields,
+                FIELD_IDS["Approvals"]["approvedAt"],
+                "approvedAt"
+            )
+            owner = extract_field_by_id(
+                fields,
+                FIELD_IDS["Approvals"]["owner"],
+                "owner"
+            )
+            remarks = extract_field_by_id(
+                fields,
+                FIELD_IDS["Approvals"]["remarks"],
+                "remarks"
+            )
+            
+            # Parse datetimes (handles Z/UTC)
+            due_at = parse_iso_any(due_at_str)
+            submitted_at = parse_iso_any(submitted_at_str)
+            approved_at = parse_iso_any(approved_at_str)
+            
+            # Calculate days until due (2 decimals)
+            days_until_due = days_until(due_at, now)
+            
+            # Classify priority (D-5/D-15/Overdue)
+            priority = classify_priority(days_until_due)
+            
+            # Build approval object
+            approval = {
+                "approvalKey": approval_key,
+                "approvalType": approval_type,
+                "status": status,
+                "dueAt": iso_dubai(due_at),
+                "submittedAt": iso_dubai(submitted_at),
+                "approvedAt": iso_dubai(approved_at),
+                "owner": owner,
+                "remarks": remarks,
+                "daysUntilDue": days_until_due,
+                "priority": priority
+            }
+            approvals.append(approval)
+            
+            # Update summary
+            status_upper = (status or "").upper()
+            if status_upper == "PENDING":
+                summary["pending"] += 1
+            elif status_upper == "APPROVED":
+                summary["approved"] += 1
+            elif status_upper == "REJECTED":
+                summary["rejected"] += 1
+            elif status_upper == "EXPIRED":
+                summary["expired"] += 1
+            
+            if priority == "CRITICAL":
+                summary["critical"] += 1
+            elif priority == "OVERDUE":
+                summary["overdue"] += 1
+        
+        # Step 4: Return response
+        return jsonify({
+            "shptNo": shptNo,
+            "approvals": approvals,
+            "summary": summary,
+            "timestamp": now_dubai(),
+            "schemaVersion": SCHEMA_VERSION
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error in get_approval_status: {str(e)}")
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(e),
+            "status": "internal_error",
+            "timestamp": now_dubai()
+        }), 500
+
+
+@app.route("/approval/summary", methods=["GET"])
+def get_approval_summary():
+    """
+    GET /approval/summary
+    
+    Returns global approval statistics with pagination support
+    """
+    if not airtable_client:
+        return jsonify({
+            "error": "Airtable connection not available",
+            "status": "service_unavailable",
+            "timestamp": now_dubai()
+        }), 503
+    
+    try:
+        # Fetch ALL approvals (with pagination)
+        approvals_raw = airtable_client.list_records(
+            table_id=TABLES["Approvals"],
+            fields=["approvalType", "status", "dueAt"],
+            page_size=100
+        )
+        
+        now = datetime.now(DUBAI_TZ)
+        
+        # Initialize aggregations
+        summary = {
+            "total": len(approvals_raw),
+            "pending": 0,
+            "approved": 0,
+            "rejected": 0,
+            "expired": 0
+        }
+        
+        by_type = {}
+        
+        critical = {
+            "overdue": 0,
+            "d5": 0,    # D-5 이내 (1-5 days)
+            "d15": 0    # D-15 이내 (6-15 days)
+        }
+        
+        # Process each approval
+        for record in approvals_raw:
+            fields = record.get("fields", {})
+            
+            # Extract fields (fieldId-based)
+            approval_type = extract_field_by_id(
+                fields,
+                FIELD_IDS["Approvals"]["approvalType"],
+                "approvalType"
+            ) or "UNKNOWN"
+            
+            status = extract_field_by_id(
+                fields,
+                FIELD_IDS["Approvals"]["status"],
+                "status"
+            ) or "UNKNOWN"
+            
+            due_at_str = extract_field_by_id(
+                fields,
+                FIELD_IDS["Approvals"]["dueAt"],
+                "dueAt"
+            )
+            
+            status_upper = status.upper()
+            
+            # Summary by status
+            if status_upper == "PENDING":
+                summary["pending"] += 1
+            elif status_upper == "APPROVED":
+                summary["approved"] += 1
+            elif status_upper == "REJECTED":
+                summary["rejected"] += 1
+            elif status_upper == "EXPIRED":
+                summary["expired"] += 1
+            
+            # Group by type
+            if approval_type not in by_type:
+                by_type[approval_type] = {
+                    "total": 0,
+                    "pending": 0,
+                    "approved": 0,
+                    "rejected": 0,
+                    "expired": 0
+                }
+            
+            by_type[approval_type]["total"] += 1
+            if status_upper == "PENDING":
+                by_type[approval_type]["pending"] += 1
+            elif status_upper == "APPROVED":
+                by_type[approval_type]["approved"] += 1
+            elif status_upper == "REJECTED":
+                by_type[approval_type]["rejected"] += 1
+            elif status_upper == "EXPIRED":
+                by_type[approval_type]["expired"] += 1
+            
+            # Critical analysis (only for PENDING)
+            if status_upper == "PENDING" and due_at_str:
+                due_at = parse_iso_any(due_at_str)
+                if due_at:
+                    days = days_until(due_at, now)
+                    if days is not None:
+                        if days < 0:
+                            critical["overdue"] += 1
+                        elif days <= 5:
+                            critical["d5"] += 1
+                        elif days <= 15:
+                            critical["d15"] += 1
+        
+        # Return response
+        return jsonify({
+            "summary": summary,
+            "byType": by_type,
+            "critical": critical,
+            "timestamp": now_dubai(),
+            "schemaVersion": SCHEMA_VERSION
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error in get_approval_summary: {str(e)}")
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(e),
+            "status": "internal_error",
+            "timestamp": now_dubai()
+        }), 500
+
+
+# ==================== Bottleneck Endpoints (Phase 4.1) ====================
+@app.route("/bottleneck/summary", methods=["GET"])
+def get_bottleneck_summary():
+    """
+    GET /bottleneck/summary
+    
+    Returns bottleneck analysis with aging distribution
+    """
+    if not airtable_client:
+        return jsonify({
+            "error": "Airtable connection not available",
+            "status": "service_unavailable",
+            "timestamp": now_dubai()
+        }), 503
+    
+    try:
+        # Fetch active bottlenecks
+        filter_formula = "NOT({currentBottleneckCode}='')"
+        
+        shipments = airtable_client.list_records(
+            table_id=TABLES["Shipments"],
+            filter_by_formula=filter_formula,
+            fields=["shptNo", "currentBottleneckCode", "bottleneckSince", "riskLevel"],
+            page_size=100
+        )
+        
+        # Fetch bottleneck code definitions
+        bottleneck_codes = airtable_client.list_records(
+            table_id=TABLES["BottleneckCodes"],
+            fields=["code", "category", "description", "riskDefault", "slaHours"]
+        )
+        
+        # Build code lookup (fieldId-based)
+        code_map = {}
+        for rec in bottleneck_codes:
+            fields = rec.get("fields", {})
+            code = extract_field_by_id(
+                fields,
+                FIELD_IDS["BottleneckCodes"]["code"],
+                "code"
+            )
+            if code:
+                code_map[code] = {
+                    "category": extract_field_by_id(
+                        fields,
+                        FIELD_IDS["BottleneckCodes"]["category"],
+                        "category"
+                    ),
+                    "description": extract_field_by_id(
+                        fields,
+                        FIELD_IDS["BottleneckCodes"]["description"],
+                        "description"
+                    ),
+                    "riskDefault": extract_field_by_id(
+                        fields,
+                        FIELD_IDS["BottleneckCodes"]["riskDefault"],
+                        "riskDefault"
+                    ),
+                    "slaHours": extract_field_by_id(
+                        fields,
+                        FIELD_IDS["BottleneckCodes"]["slaHours"],
+                        "slaHours"
+                    )
+                }
+        
+        now = datetime.now(DUBAI_TZ)
+        
+        # Initialize aggregations
+        by_category = {}
+        by_code = {}
+        aging = {
+            "under24h": 0,
+            "under48h": 0,
+            "under72h": 0,
+            "over72h": 0
+        }
+        
+        # Process shipments
+        for record in shipments:
+            fields = record.get("fields", {})
+            
+            code = extract_field_by_id(
+                fields,
+                FIELD_IDS["Shipments"]["currentBottleneckCode"],
+                "currentBottleneckCode"
+            )
+            
+            since_str = extract_field_by_id(
+                fields,
+                FIELD_IDS["Shipments"]["bottleneckSince"],
+                "bottleneckSince"
+            )
+            
+            if not code:
+                continue
+            
+            # Initialize code stats
+            if code not in by_code:
+                by_code[code] = {
+                    "count": 0,
+                    "riskLevel": code_map.get(code, {}).get("riskDefault", "MEDIUM"),
+                    "description": code_map.get(code, {}).get("description", ""),
+                    "slaHours": code_map.get(code, {}).get("slaHours"),
+                    "totalAgingHours": 0.0
+                }
+            
+            by_code[code]["count"] += 1
+            
+            # Calculate aging
+            if since_str:
+                since = parse_iso_any(since_str)
+                if since:
+                    aging_hours = (now - since).total_seconds() / 3600.0
+                    aging_hours = round(aging_hours, 2)
+                    
+                    by_code[code]["totalAgingHours"] += aging_hours
+                    
+                    # Aging distribution
+                    if aging_hours < 24:
+                        aging["under24h"] += 1
+                    elif aging_hours < 48:
+                        aging["under48h"] += 1
+                    elif aging_hours < 72:
+                        aging["under72h"] += 1
+                    else:
+                        aging["over72h"] += 1
+            
+            # By category
+            category = code_map.get(code, {}).get("category", "UNKNOWN")
+            if category not in by_category:
+                by_category[category] = 0
+            by_category[category] += 1
+        
+        # Calculate averages
+        for code, stats in by_code.items():
+            if stats["count"] > 0:
+                stats["avgAgingHours"] = round(
+                    stats["totalAgingHours"] / stats["count"],
+                    2
+                )
+            else:
+                stats["avgAgingHours"] = 0.0
+            del stats["totalAgingHours"]  # Remove temp field
+        
+        # Top bottlenecks (sorted by count)
+        top_bottlenecks = sorted(
+            [{"code": k, **v} for k, v in by_code.items()],
+            key=lambda x: x["count"],
+            reverse=True
+        )[:10]
+        
+        # Return response
+        return jsonify({
+            "byCategory": by_category,
+            "byCode": by_code,
+            "aging": aging,
+            "topBottlenecks": top_bottlenecks,
+            "totalActive": len(shipments),
+            "timestamp": now_dubai(),
+            "schemaVersion": SCHEMA_VERSION
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error in get_bottleneck_summary: {str(e)}")
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(e),
+            "status": "internal_error",
+            "timestamp": now_dubai()
+        }), 500
+
+
+# ==================== Document Events Endpoint (Phase 4.1) ====================
+@app.route("/document/events/<shptNo>", methods=["GET"])
+def get_document_events(shptNo: str):
+    """
+    GET /document/events/{shptNo}
+    
+    Returns chronological event history (latest first)
+    """
+    if not airtable_client:
+        return jsonify({
+            "error": "Airtable connection not available",
+            "status": "service_unavailable",
+            "timestamp": now_dubai()
+        }), 503
+    
+    try:
+        # Step 1: Verify shipment exists
+        shipment_filter = f"{{shptNo}}='{shptNo}'"
+        
+        shipments = airtable_client.list_records(
+            table_id=TABLES["Shipments"],
+            filter_by_formula=shipment_filter,
+            fields=["shptNo"]
+        )
+        
+        if not shipments:
+            return jsonify({
+                "error": "Shipment not found",
+                "shptNo": shptNo,
+                "timestamp": now_dubai(),
+                "schemaVersion": SCHEMA_VERSION
+            }), 404
+        
+        # Step 2: Fetch events (may be empty → 200 OK)
+        event_filter = f"{{shptNo}}='{shptNo}'"
+        
+        events_raw = airtable_client.list_records(
+            table_id=TABLES["Events"],
+            filter_by_formula=event_filter,
+            fields=[
+                "eventId", "timestamp", "entityType",
+                "fromStatus", "toStatus", "actor", "bottleneckCode"
+            ]
+        )
+        
+        # Step 3: Parse and sort (fieldId-based)
+        events = []
+        
+        for record in events_raw:
+            fields = record.get("fields", {})
+            
+            event_id = extract_field_by_id(
+                fields,
+                FIELD_IDS["Events"]["eventId"],
+                "eventId"
+            )
+            
+            timestamp_str = extract_field_by_id(
+                fields,
+                FIELD_IDS["Events"]["timestamp"],
+                "timestamp"
+            )
+            
+            entity_type = extract_field_by_id(
+                fields,
+                FIELD_IDS["Events"]["entityType"],
+                "entityType"
+            )
+            
+            from_status = extract_field_by_id(
+                fields,
+                FIELD_IDS["Events"]["fromStatus"],
+                "fromStatus"
+            )
+            
+            to_status = extract_field_by_id(
+                fields,
+                FIELD_IDS["Events"]["toStatus"],
+                "toStatus"
+            )
+            
+            actor = extract_field_by_id(
+                fields,
+                FIELD_IDS["Events"]["actor"],
+                "actor"
+            )
+            
+            bottleneck_code = extract_field_by_id(
+                fields,
+                FIELD_IDS["Events"]["bottleneckCode"],
+                "bottleneckCode"
+            )
+            
+            # Parse timestamp
+            timestamp = parse_iso_any(timestamp_str)
+            
+            event = {
+                "eventId": event_id,
+                "timestamp": iso_dubai(timestamp),
+                "timestampSort": timestamp,  # For sorting
+                "entityType": entity_type,
+                "fromStatus": from_status,
+                "toStatus": to_status,
+                "actor": actor,
+                "bottleneckCode": bottleneck_code
+            }
+            events.append(event)
+        
+        # Sort by timestamp (descending = latest first)
+        events.sort(key=lambda e: e.get("timestampSort") or datetime.min.replace(tzinfo=DUBAI_TZ), reverse=True)
+        
+        # Remove sort helper
+        for event in events:
+            event.pop("timestampSort", None)
+        
+        # Step 4: Return response
+        return jsonify({
+            "shptNo": shptNo,
+            "events": events,
+            "total": len(events),
+            "timestamp": now_dubai(),
+            "schemaVersion": SCHEMA_VERSION
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Error in get_document_events: {str(e)}")
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(e),
+            "status": "internal_error",
+            "timestamp": now_dubai()
+        }), 500
+
+
+# ==================== Event Ingest Endpoint (Phase 2.2) ====================
 @app.route("/ingest/events", methods=["POST"])
 def ingest_events():
     """
