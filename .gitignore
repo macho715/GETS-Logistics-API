@@ -30,4 +30,19 @@ Thumbs.db
 
 # Archived files
 _archived/
+_docs_archive/
+
+# Test coverage
+htmlcov/
+.coverage
+*.cover
+
+# Temporary files
+*.tmp
+*.bak
+*.log
+
+# Cursor pack
+cursor_only_pack_gets_v1/
+cursor_only_pack_gets_v1.zip
 

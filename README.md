@@ -494,6 +494,6 @@ This project is proprietary and confidential.
 
 **Built with ❤️ for HVDC Project Logistics**
 
-**Last Updated**: 2025-12-25  
-**Status**: ✅ Production Ready  
+**Last Updated**: 2025-12-25
+**Status**: ✅ Production Ready
 **Version**: 1.7.0
