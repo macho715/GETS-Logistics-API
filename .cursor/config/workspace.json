@@ -1,0 +1,28 @@
+{
+  "openOnStart": [
+    "AGENTS.md",
+    "ARCHITECTURE.md",
+    "README.md"
+  ],
+  "terminals": {
+    "shortcuts": [
+      {
+        "name": "pre-commit",
+        "cmd": "pre-commit run --all-files"
+      },
+      {
+        "name": "pytest",
+        "cmd": "pytest -q"
+      },
+      {
+        "name": "lint",
+        "cmd": "ruff check . && ruff format --check . && black --check . && isort --check-only ."
+      },
+      {
+        "name": "deploy-preflight",
+        "cmd": "chmod +x scripts/deploy_preflight.sh && ./scripts/deploy_preflight.sh"
+      }
+    ]
+  }
+}
+

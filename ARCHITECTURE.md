@@ -2,11 +2,13 @@
 
 ## 📋 Document Information
 
-**Project**: GETS Logistics API for HVDC Project  
-**Version**: 1.7.0 (SpecPack v1.0 + Locked Mapping)  
-**Last Updated**: 2025-12-25  
-**Timezone**: Asia/Dubai (+04:00)  
+**Project**: GETS Logistics API for HVDC Project
+**Version**: 1.7.0 (SpecPack v1.0 + Locked Mapping)
+**Last Updated**: 2025-12-25
+**Timezone**: Asia/Dubai (+04:00)
 **Deployment**: Vercel Serverless (Production)
+**Production URL**: https://gets-logistics-api.vercel.app
+**Schema Version**: 2025-12-25T00:32:52+0400
 
 ---
 
@@ -40,14 +42,14 @@ graph TB
 
     subgraph "Application Layer - Vercel Serverless"
         FLASK[Flask API<br/>document_status.py]
-        
+
         subgraph "Core Modules"
             AIRTABLE_CLIENT[Airtable Client<br/>Rate Limiting: 5 RPS]
             SCHEMA_VAL[Schema Validator<br/>Lock Version: 2025-12-25]
             MONITOR[Monitoring<br/>Perf + SLA Tracking]
             UTILS[Utilities<br/>Timezone, Parsing]
         end
-        
+
         FLASK --> AIRTABLE_CLIENT
         FLASK --> SCHEMA_VAL
         FLASK --> MONITOR
@@ -56,7 +58,7 @@ graph TB
 
     subgraph "Data Layer"
         AIRTABLE[(Airtable Base<br/>appnLz06h07aMm366)]
-        
+
         subgraph "10 Tables"
             SHIPMENTS[Shipments<br/>36 records]
             DOCUMENTS[Documents<br/>Doc Status]
@@ -69,7 +71,7 @@ graph TB
             VENDORS[Vendors<br/>Suppliers]
             SITES[Sites<br/>Locations]
         end
-        
+
         AIRTABLE --> SHIPMENTS
         AIRTABLE --> DOCUMENTS
         AIRTABLE --> APPROVALS
@@ -94,7 +96,7 @@ graph TB
     AIRTABLE_CLIENT --> AIRTABLE
     SCHEMA_VAL --> LOCK_SCHEMA
     FLASK --> LOCK_CONFIG
-    
+
     style GPT fill:#10a37f
     style VERCEL fill:#000
     style FLASK fill:#000080
@@ -118,20 +120,20 @@ sequenceDiagram
 
     GPT->>VERCEL: GET /approval/summary
     VERCEL->>API: Route to /api/document_status
-    
+
     API->>VALIDATOR: Validate schema version
     VALIDATOR-->>API: ✓ Lock match (2025-12-25)
-    
+
     API->>CLIENT: list_records("Approvals")
     CLIENT->>CLIENT: Check rate limit (5 RPS)
     CLIENT->>AIRTABLE: GET /v0/appnLz06h07aMm366/Approvals
     AIRTABLE-->>CLIENT: JSON records + offset
     CLIENT->>CLIENT: Paginate (100/page)
     CLIENT-->>API: Aggregated records
-    
+
     API->>API: Compute SLA buckets<br/>(D-5, D-15, Overdue)
     API->>API: Classify by type<br/>(DOC_BOE, APPR_FANR, etc)
-    
+
     API-->>VERCEL: JSON Response
     VERCEL-->>GPT: 200 OK + Data
 ```
@@ -144,31 +146,31 @@ sequenceDiagram
 graph LR
     subgraph "api/ Package"
         DS[document_status.py<br/>Main Flask App<br/>1,418 lines]
-        
+
         AC[airtable_client.py<br/>HTTP Client<br/>Rate Limiting]
-        
+
         SV[schema_validator.py<br/>Lock File Parser<br/>Version Check]
-        
+
         MON[monitoring.py<br/>Logger + Slack<br/>Perf Tracker]
-        
+
         UT[utils.py<br/>Timezone Handling<br/>Field Extraction]
-        
+
         LC[airtable_locked_config.py<br/>Table IDs<br/>Protected Fields]
-        
+
         LS[airtable_schema.lock.json<br/>Full Schema<br/>Immutable Snapshot]
     end
-    
+
     DS -->|Import| AC
     DS -->|Import| SV
     DS -->|Import| MON
     DS -->|Import| UT
     DS -->|Import| LC
-    
+
     SV -->|Load| LS
     MON -->|Import| LC
-    
+
     AC -->|HTTP| AIRTABLE_API[Airtable REST API<br/>api.airtable.com]
-    
+
     style DS fill:#4a90e2
     style LC fill:#e74c3c
     style LS fill:#e74c3c
@@ -184,19 +186,19 @@ graph LR
 graph TB
     ROOT[/ <br/>API Info + Features]
     HEALTH[/health<br/>System Status]
-    
+
     STATUS_SUMMARY[/status/summary<br/>Global Shipment KPIs]
     DOC_STATUS[/document/status/:shptNo<br/>Document Status by Shipment]
-    
+
     APPR_STATUS[/approval/status/:shptNo<br/>Approval Status by Shipment]
     APPR_SUMMARY[/approval/summary<br/>Global Approval SLA]
-    
+
     BOTTLENECK[/bottleneck/summary<br/>Aging Distribution]
-    
+
     EVENTS[/document/events/:shptNo<br/>Audit Trail]
-    
+
     INGEST[POST /ingest/events<br/>Event Recording]
-    
+
     ROOT --> HEALTH
     HEALTH --> STATUS_SUMMARY
     STATUS_SUMMARY --> DOC_STATUS
@@ -205,7 +207,7 @@ graph TB
     APPR_SUMMARY --> BOTTLENECK
     BOTTLENECK --> EVENTS
     EVENTS --> INGEST
-    
+
     style ROOT fill:#2ecc71
     style HEALTH fill:#3498db
     style APPR_SUMMARY fill:#e74c3c
@@ -235,7 +237,7 @@ erDiagram
     SHIPMENTS ||--o{ APPROVALS : requires
     SHIPMENTS ||--o{ ACTIONS : triggers
     SHIPMENTS ||--o{ EVENTS : logs
-    
+
     SHIPMENTS {
         string shptNo PK
         string currentBottleneckCode FK
@@ -245,7 +247,7 @@ erDiagram
         string actionOwner FK
         datetime dueAt
     }
-    
+
     DOCUMENTS {
         string recordId PK
         string shptNo FK
@@ -254,7 +256,7 @@ erDiagram
         datetime submittedAt
         datetime approvedAt
     }
-    
+
     APPROVALS {
         string recordId PK
         string shptNo FK
@@ -263,7 +265,7 @@ erDiagram
         datetime dueAt
         string assignedTo FK
     }
-    
+
     ACTIONS {
         string recordId PK
         string shptNo FK
@@ -273,7 +275,7 @@ erDiagram
         datetime dueAt
         string owner FK
     }
-    
+
     EVENTS {
         int eventId PK
         datetime timestamp
@@ -283,21 +285,21 @@ erDiagram
         string toStatus
         string note
     }
-    
+
     BOTTLENECKCODES {
         string code PK
         string category
         int riskDefault
         int slaHours
     }
-    
+
     OWNERS {
         string recordId PK
         string name
         string role
         string contact
     }
-    
+
     SHIPMENTS }o--|| BOTTLENECKCODES : classified_by
     ACTIONS }o--|| OWNERS : assigned_to
     APPROVALS }o--|| OWNERS : assigned_to
@@ -375,7 +377,7 @@ TABLES = {
 
 # Protected Fields (20 total - RENAME FORBIDDEN)
 PROTECTED_FIELDS = {
-    "Shipments": ["shptNo", "currentBottleneckCode", "bottleneckSince", 
+    "Shipments": ["shptNo", "currentBottleneckCode", "bottleneckSince",
                   "riskLevel", "nextAction", "actionOwner", "dueAt"],
     "Documents": ["shptNo", "docType", "status"],
     "Actions": ["shptNo", "status", "priority", "dueAt", "actionText", "owner"],
@@ -651,7 +653,7 @@ security:
 
 ```
 Instructions:
-"You are a logistics assistant for HVDC project shipments. 
+"You are a logistics assistant for HVDC project shipments.
 Use the GETS API to check shipment status, approvals, and bottlenecks.
 Always mention the shipment number (shptNo) when providing updates."
 
@@ -726,25 +728,25 @@ graph LR
         WARM[Warm<br/>500ms-2s<br/>Subsequent]
         CACHE[Edge Cache<br/><100ms<br/>Static Assets]
     end
-    
+
     subgraph "Airtable Rate Limits"
         RPS5[5 RPS per Base<br/>Enforced by Client]
         RPS50[50 RPS per PAT<br/>Airtable Limit]
         RETRY[429 Retry<br/>30s Backoff]
     end
-    
+
     subgraph "Optimization"
         PAGINATION[Offset Paging<br/>100 records/page]
         FIELD_SELECT[Field Selection<br/>Minimal Data Transfer]
         CONCURRENT[No Concurrent<br/>Sequential Queries]
     end
-    
+
     COLD --> WARM
     WARM --> CACHE
-    
+
     RPS5 --> RPS50
     RPS50 --> RETRY
-    
+
     PAGINATION --> FIELD_SELECT
     FIELD_SELECT --> CONCURRENT
 ```
@@ -769,26 +771,26 @@ graph TB
         BEARER[Bearer Token<br/>API_KEY env var]
         OPTIONAL[Optional Auth<br/>Only if API_KEY set]
     end
-    
+
     subgraph "Authorization"
         CHATGPT[ChatGPT Origin<br/>chat.openai.com]
         CORS[CORS Policy<br/>Allow: chatgpt.com, localhost]
     end
-    
+
     subgraph "Secrets Management"
         VERCEL_ENV[Vercel Env Vars<br/>AIRTABLE_API_TOKEN]
         NO_COMMIT[.gitignore<br/>.env excluded]
     end
-    
+
     subgraph "Data Protection"
         NO_PII[No PII Logging<br/>Masked in Errors]
         AIRTABLE_PAT[Airtable PAT<br/>Base-level Access]
     end
-    
+
     BEARER --> OPTIONAL
     OPTIONAL --> CHATGPT
     CHATGPT --> CORS
-    
+
     VERCEL_ENV --> NO_COMMIT
     NO_PII --> AIRTABLE_PAT
 ```
@@ -800,26 +802,26 @@ graph TB
 ```mermaid
 graph LR
     LOCAL[Local Development<br/>Python 3.11]
-    
+
     GIT[Git Commit<br/>GitHub main branch]
-    
+
     VERCEL_BUILD[Vercel Build<br/>Install deps<br/>5-10s]
-    
+
     VERCEL_DEPLOY[Serverless Deploy<br/>iad1 region<br/>10-15s]
-    
+
     VERCEL_PROD[Production<br/>gets-logistics-api.vercel.app]
-    
+
     HEALTH_CHECK[Health Check<br/>/health endpoint]
-    
+
     CHATGPT[ChatGPT Actions<br/>Automatic Discovery]
-    
+
     LOCAL -->|git push| GIT
     GIT -->|Webhook| VERCEL_BUILD
     VERCEL_BUILD -->|Success| VERCEL_DEPLOY
     VERCEL_DEPLOY --> VERCEL_PROD
     VERCEL_PROD --> HEALTH_CHECK
     HEALTH_CHECK -->|200 OK| CHATGPT
-    
+
     style LOCAL fill:#95a5a6
     style GIT fill:#f39c12
     style VERCEL_PROD fill:#2ecc71
@@ -907,22 +909,22 @@ graph TB
         INTEGRATION[Integration Tests<br/>Airtable Mock]
         E2E[E2E Tests<br/>Production Health Check]
     end
-    
+
     subgraph "Coverage"
         TARGET[Target: 80%<br/>Core Modules]
         ACTUAL[Actual: ~70%<br/>api/ package]
     end
-    
+
     subgraph "CI/CD"
         GITHUB_ACTIONS[GitHub Actions<br/>Not Yet Implemented]
         MANUAL[Manual pytest<br/>Before Deploy]
     end
-    
+
     UNIT --> INTEGRATION
     INTEGRATION --> E2E
-    
+
     TARGET --> ACTUAL
-    
+
     MANUAL --> UNIT
 ```
 
@@ -936,21 +938,21 @@ graph TB
         LOGGER[Python Logger<br/>JSON Format]
         VERCEL_LOGS[Vercel Function Logs<br/>Real-time Stream]
     end
-    
+
     subgraph "Metrics"
         PERF_TRACKER[Performance Tracker<br/>Response Time]
         SLA_MONITOR[SLA Monitor<br/>D-5, D-15 Tracking]
     end
-    
+
     subgraph "Alerts"
         SLACK[Slack Integration<br/>Critical Errors]
         EMAIL[Email Notifications<br/>Not Yet Implemented]
     end
-    
+
     LOGGER --> VERCEL_LOGS
     PERF_TRACKER --> VERCEL_LOGS
     SLA_MONITOR --> SLACK
-    
+
     style VERCEL_LOGS fill:#000
     style SLACK fill:#4a154b
 ```
@@ -1089,6 +1091,6 @@ git push origin main
 
 ---
 
-**Document Maintained By**: GETS Development Team  
-**Contact**: [Insert Contact Info]  
+**Document Maintained By**: GETS Development Team
+**Contact**: [Insert Contact Info]
 **Last Review**: 2025-12-25

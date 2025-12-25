@@ -1,0 +1,10 @@
+preload_docs:
+  - path: "AGENTS.md"
+    open_on_start: true
+  - path: "ARCHITECTURE.md"
+    open_on_start: true
+  - path: "README.md"
+    open_on_start: true
+  - path: "config/project_profile.yaml"
+    open_on_start: false
+

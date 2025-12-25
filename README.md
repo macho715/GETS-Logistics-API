@@ -204,10 +204,50 @@ python lock_schema_and_generate_mapping.py
 # - schema_summary.csv (human-readable reference)
 ```
 
-### Deploy to Vercel
+### Deploy to Vercel (with Preflight Check)
+
+**⚠️ IMPORTANT: Always run preflight before deploying!**
 
 ```bash
+# 1. Set production URL
+export PROD_URL="https://gets-logistics-api.vercel.app"
+
+# 2. Run deploy preflight (validates health + schemaVersion)
+chmod +x scripts/deploy_preflight.sh
+./scripts/deploy_preflight.sh
+
+# 3. Only deploy if preflight passes
 vercel --prod
+```
+
+**Preflight checks:**
+- ✅ `/health` endpoint returns HTTP 200
+- ✅ `schemaVersion` matches `2025-12-25T00:32:52+0400`
+- ✅ PROD_URL is valid HTTPS URL
+
+**If preflight fails:** STOP. Do not deploy until issues are resolved.
+
+### Cursor Rules Pack Integration
+
+This project uses **cursor_only_pack_gets_v1** for:
+- 🛡️ **ZERO Fail-safe**: Prevents blind deployments
+- 📋 **TDD Workflow**: RED → GREEN → REFACTOR
+- 🔍 **Quality Gates**: Coverage ≥85%, Lint 0 warnings
+- 🔐 **Security**: bandit + pip-audit
+
+**Quick commands:**
+```bash
+# Run preflight
+./scripts/deploy_preflight.sh
+
+# Run tests
+pytest -q
+
+# Run linters
+ruff check . && black --check . && isort --check-only .
+
+# Pre-commit hooks
+python tools/init_settings.py --precommit
 ```
 
 ---

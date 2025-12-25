@@ -176,3 +176,27 @@ A task is DONE only if:
 - OpenAPI pinned + `x-protected-fields` correct
 - `/health` exposes schemaVersion + protected fields summary
 - No unexplained TODOs left in code paths touched
+
+## 11) Deployment Preflight (ZERO Fail-safe)
+**Before any production deployment:**
+1. **Set PROD_URL explicitly**:
+   ```bash
+   export PROD_URL="https://gets-logistics-api.vercel.app"
+   ```
+2. **Run preflight script**:
+   ```bash
+   chmod +x scripts/deploy_preflight.sh
+   ./scripts/deploy_preflight.sh
+   ```
+3. **Preflight must pass** (exit 0):
+   - `/health` returns HTTP 200
+   - `schemaVersion` matches `2025-12-25T00:32:52+0400`
+   - PROD_URL is valid HTTPS URL
+
+**If preflight fails**: STOP. Do not deploy. Fix the issue first.
+
+**ZERO STOP Rule**: If Agent cannot validate PROD_URL or schemaVersion, output STOP table:
+
+| 단계 | 이유 | 위험 | 요청데이터 | 다음조치 |
+|------|------|------|-----------|----------|
+| ZERO | PROD_URL unknown | Wrong deploy target | Production URL | Provide PROD_URL |
