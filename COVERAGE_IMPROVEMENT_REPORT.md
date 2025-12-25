@@ -62,17 +62,17 @@ TOTAL                       825    519    37%  ✅ +31%!
 - `TestAirtableClientInit` (2 tests)
   - Client initialization
   - URL encoding
-  
+
 - `TestAirtableClientRequest` (5 tests)
   - Successful requests
   - Retry on 429 (rate limit)
   - Retry on 503 (service unavailable)
   - Non-retryable error handling
   - Max retries exhaustion
-  
+
 - `TestAirtableClientListRecords` (1 test)
   - Pagination and params building
-  
+
 - `TestAirtableClientWriteOperations` (3 tests)
   - Create records payload
   - Update records payload
@@ -95,25 +95,25 @@ TOTAL                       825    519    37%  ✅ +31%!
   - Standard fields
   - Exception formatting
   - Extra fields
-  
+
 - `TestSetupLogger` (1 test)
   - Logger configuration
-  
+
 - `TestSlackNotifier` (4 tests)
   - Disabled without webhook
   - Send alert success
   - Send alert failure
   - Helper methods (error/info)
-  
+
 - `TestPerformanceTracker` (2 tests)
   - Track and get metrics
   - All endpoints metrics
-  
+
 - `TestMonitorPerformanceDecorator` (3 tests)
   - Success handling
   - Slow response detection
   - Error handling
-  
+
 - `TestHealthChecks` (4 tests)
   - Airtable connection check
   - Schema version match
@@ -140,13 +140,13 @@ TOTAL                       825    519    37%  ✅ +31%!
 - `TestSchemaValidatorInit` (2 tests)
   - Load lock file
   - Missing lock raises error
-  
+
 - `TestSchemaValidatorLookup` (4 tests)
   - Get table ID
   - Get valid fields
   - Get missing fields
   - Get field info
-  
+
 - `TestSchemaValidatorValidation` (3 tests)
   - All valid fields
   - Invalid fields detection
