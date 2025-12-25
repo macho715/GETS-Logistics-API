@@ -1,6 +1,6 @@
 """
-Common utilities for Airtable datetime parsing and timezone normalization
-Handles Airtable's Z (UTC) format and ensures all times are Asia/Dubai (+04:00)
+Common utility functions for GETS API
+Provides robust datetime parsing, timezone conversion, and field extraction
 """
 
 from __future__ import annotations
@@ -13,43 +13,45 @@ DUBAI_TZ = ZoneInfo("Asia/Dubai")
 
 def parse_iso_any(s: str | None) -> datetime | None:
     """
-    Parse ISO datetime from Airtable (handles Z/UTC format)
-    
-    Airtable may return:
-    - 2025-12-25T12:00:00.000Z (UTC)
-    - 2025-12-25T12:00:00+04:00 (with timezone)
-    - 2025-12-25T12:00:00 (naive, assume UTC)
-    
-    Always returns Asia/Dubai timezone
+    Parse ISO datetime string, handling Z/UTC and naive formats
     
     Args:
-        s: ISO datetime string from Airtable
+        s: ISO datetime string (e.g., "2025-12-25T12:00:00.000Z" or "2025-12-25T16:00:00+04:00")
     
     Returns:
-        datetime in Asia/Dubai timezone, or None if input is None/invalid
+        datetime object in Asia/Dubai timezone, or None if parsing fails
+    
+    Examples:
+        >>> parse_iso_any("2025-12-25T12:00:00.000Z")  # UTC with Z
+        datetime.datetime(2025, 12, 25, 16, 0, tzinfo=ZoneInfo('Asia/Dubai'))
+        
+        >>> parse_iso_any("2025-12-25T16:00:00+04:00")  # Explicit timezone
+        datetime.datetime(2025, 12, 25, 16, 0, tzinfo=ZoneInfo('Asia/Dubai'))
+        
+        >>> parse_iso_any("2025-12-25T12:00:00")  # Naive (assumed UTC)
+        datetime.datetime(2025, 12, 25, 16, 0, tzinfo=ZoneInfo('Asia/Dubai'))
     """
     if not s:
         return None
     
-    s = s.strip()
-    
-    # Handle Z (UTC) suffix
-    if s.endswith("Z"):
-        s = s[:-1] + "+00:00"
-    
-    # Parse ISO format
     try:
+        s = s.strip()
+        
+        # Airtable may return Z (UTC)
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        
         dt = datetime.fromisoformat(s)
-    except ValueError as e:
-        print(f"⚠️ Failed to parse datetime: {s} - {e}")
+        
+        # If naive (no timezone), assume UTC
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        
+        # Convert to Dubai timezone
+        return dt.astimezone(DUBAI_TZ)
+    
+    except (ValueError, AttributeError):
         return None
-    
-    # If naive (no timezone), assume UTC
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    
-    # Convert to Dubai timezone
-    return dt.astimezone(DUBAI_TZ)
 
 
 def iso_dubai(dt: datetime | None) -> str | None:
@@ -57,24 +59,35 @@ def iso_dubai(dt: datetime | None) -> str | None:
     Convert datetime to ISO string in Asia/Dubai timezone
     
     Args:
-        dt: datetime object
+        dt: datetime object (any timezone)
     
     Returns:
-        ISO string like "2025-12-25T16:00:00+04:00", or None if input is None
+        ISO string in Asia/Dubai timezone, or None if dt is None
+    
+    Examples:
+        >>> from datetime import datetime, timezone
+        >>> dt = datetime(2025, 12, 25, 12, 0, 0, tzinfo=timezone.utc)
+        >>> iso_dubai(dt)
+        '2025-12-25T16:00:00+04:00'
     """
     if not dt:
         return None
+    
     return dt.astimezone(DUBAI_TZ).isoformat(timespec="seconds")
 
 
 def now_dubai() -> str:
     """
-    Current timestamp in Asia/Dubai timezone
+    Get current timestamp in Asia/Dubai timezone
     
     Returns:
-        ISO string of current time in Dubai timezone
+        ISO string of current time in Asia/Dubai
+    
+    Examples:
+        >>> now_dubai()
+        '2025-12-25T16:30:45+04:00'
     """
-    return iso_dubai(datetime.now(DUBAI_TZ))
+    return datetime.now(DUBAI_TZ).isoformat(timespec="seconds")
 
 
 def days_until(due: datetime | None, now: datetime) -> float | None:
@@ -82,71 +95,105 @@ def days_until(due: datetime | None, now: datetime) -> float | None:
     Calculate days until due date (2 decimal precision)
     
     Args:
-        due: Due date datetime
-        now: Current datetime
+        due: Due date (datetime)
+        now: Current time (datetime)
     
     Returns:
-        - Positive: days remaining
-        - Negative: days overdue
-        - None: no due date set
+        Days until due (float, 2 decimals), negative if overdue, or None if due is None
+    
+    Examples:
+        >>> from datetime import datetime
+        >>> now = datetime(2025, 12, 25, 10, 0, 0, tzinfo=DUBAI_TZ)
+        >>> due = datetime(2025, 12, 28, 16, 0, 0, tzinfo=DUBAI_TZ)
+        >>> days_until(due, now)
+        3.25
     """
     if not due:
         return None
     
-    delta_seconds = (due - now).total_seconds()
-    return round(delta_seconds / 86400.0, 2)
+    delta = due - now
+    days = delta.total_seconds() / 86400.0
+    return round(days, 2)
 
 
 def classify_priority(days: float | None) -> str:
     """
     Classify approval priority based on days until due
     
-    Categories:
-    - OVERDUE: < 0 days
-    - CRITICAL: 0-5 days (D-5)
-    - HIGH: 6-15 days (D-15)
-    - NORMAL: > 15 days
-    - UNKNOWN: no due date
-    
     Args:
-        days: Days until due (from days_until())
+        days: Days until due (from days_until function)
     
     Returns:
-        Priority level string
+        Priority level: OVERDUE, CRITICAL (D-5), HIGH (D-15), NORMAL, or UNKNOWN
+    
+    Classification:
+        - OVERDUE: days < 0
+        - CRITICAL: 0 <= days <= 5 (D-5)
+        - HIGH: 5 < days <= 15 (D-15)
+        - NORMAL: days > 15
+        - UNKNOWN: days is None
+    
+    Examples:
+        >>> classify_priority(-1.0)
+        'OVERDUE'
+        >>> classify_priority(3.0)
+        'CRITICAL'
+        >>> classify_priority(10.0)
+        'HIGH'
+        >>> classify_priority(20.0)
+        'NORMAL'
     """
     if days is None:
         return "UNKNOWN"
     
     if days < 0:
         return "OVERDUE"
-    elif days <= 5:
+    
+    if days <= 5:
         return "CRITICAL"
-    elif days <= 15:
+    
+    if days <= 15:
         return "HIGH"
-    else:
-        return "NORMAL"
+    
+    return "NORMAL"
 
 
-def extract_field_by_id(fields: Dict[str, Any], field_id: str, field_name: str = None) -> Any:
+def extract_field_by_id(
+    fields: Dict[str, Any], 
+    field_id: str, 
+    field_name: str = None
+) -> Any:
     """
-    Extract field value from Airtable response
-    Supports both field name and field ID keys (rename-safe)
+    Extract field value by ID (rename-safe), with fallback to field name
+    
+    This function provides rename-safety by prioritizing field IDs over field names.
+    When Airtable API is called with returnFieldsByFieldId=true, response keys are
+    field IDs (e.g., "fldABC123"). This function handles both formats gracefully.
     
     Args:
         fields: Airtable record fields dict
-        field_id: Field ID (e.g., "fldABC123")
-        field_name: Field name (fallback, e.g., "shptNo")
+        field_id: Field ID (e.g., "fldABC123" from airtable_locked_config.FIELD_IDS)
+        field_name: Optional field name for fallback (e.g., "shptNo")
     
     Returns:
-        Field value or None
+        Field value, or None if not found
+    
+    Examples:
+        >>> fields = {"fldABC123": "SCT-0143", "shptNo": "SCT-0143"}
+        >>> extract_field_by_id(fields, "fldABC123", "shptNo")
+        'SCT-0143'
+        
+        >>> fields = {"shptNo": "SCT-0143"}
+        >>> extract_field_by_id(fields, "fldABC123", "shptNo")
+        'SCT-0143'
     """
-    # Try field ID first (returnFieldsByFieldId=true)
-    if field_id in fields:
+    # Priority 1: Field ID (rename-safe)
+    if field_id and field_id in fields:
         return fields[field_id]
     
-    # Fallback to field name
+    # Priority 2: Field name (fallback)
     if field_name and field_name in fields:
         return fields[field_name]
     
+    # Not found
     return None
-
