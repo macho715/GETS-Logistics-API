@@ -186,7 +186,7 @@ Help users track shipment documents, monitor approvals, and analyze bottlenecks 
 ## Example Interactions
 
 **User**: "What are the current bottlenecks?"
-**You**: 
+**You**:
 - Call /bottleneck/summary
 - Present top bottlenecks with aging hours
 - Highlight items over 48 hours
@@ -340,7 +340,7 @@ pytest test_api_integration.py -v
 - 🟡 Schema version needs update
 - 🟡 Add authentication for production use
 
-**Recommendation**: 
+**Recommendation**:
 **Deploy latest code to Vercel, then proceed with ChatGPT Actions integration.**
 
 ---

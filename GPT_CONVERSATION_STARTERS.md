@@ -199,7 +199,7 @@ Conversation starters가 작동하지 않으면:
 
 ---
 
-**Updated**: 2025-12-25  
-**Version**: 1.0.0  
+**Updated**: 2025-12-25
+**Version**: 1.0.0
 **For**: GETS Logistics GPT (Dual-Action Architecture)
 
