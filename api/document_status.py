@@ -1,10 +1,16 @@
 import os
 from flask import Flask, jsonify, request, abort, send_from_directory
 from flask_cors import CORS
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
-from zoneinfo import ZoneInfo
 from enum import Enum
+
+try:
+    from zoneinfo import ZoneInfo
+
+    DUBAI_TZ_LOCAL = ZoneInfo("Asia/Dubai")
+except (ImportError, Exception):
+    DUBAI_TZ_LOCAL = timezone(timedelta(hours=4))
 
 # Import production-ready Airtable client and locked configuration (Phase 2.3)
 from api.airtable_client import AirtableClient
@@ -27,7 +33,7 @@ from api.monitoring import (
     check_schema_version,
     check_protected_fields,
 )
-from airtable_locked_config import (
+from api.airtable_locked_config import (
     BASE_ID,
     TABLES,
     SCHEMA_VERSION,
@@ -63,7 +69,7 @@ if AIRTABLE_API_TOKEN:
     AIRTABLE_API_TOKEN = AIRTABLE_API_TOKEN.strip()
 
 AIRTABLE_BASE_ID = BASE_ID  # Use locked BASE_ID (Phase 2.3)
-DUBAI_TZ = ZoneInfo("Asia/Dubai")  # +04:00
+DUBAI_TZ = DUBAI_TZ_LOCAL  # +04:00
 
 # Initialize schema validator (Phase 2.2) - now used for validation only
 schema_validator = None

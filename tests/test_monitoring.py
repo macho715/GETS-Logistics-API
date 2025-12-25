@@ -269,7 +269,7 @@ class TestHealthChecks:
         assert monitoring.check_schema_version() is True
 
     def test_check_protected_fields_false_on_mismatch(self, monkeypatch):
-        import airtable_locked_config
+        import api.airtable_locked_config as airtable_locked_config
 
         monkeypatch.setattr(airtable_locked_config, "PROTECTED_FIELDS", {"A": ["a"]})
 

@@ -361,7 +361,7 @@ def check_schema_version() -> bool:
 def check_protected_fields() -> bool:
     """Check protected fields count"""
     try:
-        from airtable_locked_config import PROTECTED_FIELDS
+        from api.airtable_locked_config import PROTECTED_FIELDS
         
         total_protected = sum(len(fields) for fields in PROTECTED_FIELDS.values())
         
