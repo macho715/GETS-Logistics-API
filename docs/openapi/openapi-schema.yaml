@@ -55,8 +55,8 @@ info:
       - toStatus
 
 servers:
-  - url: https://gets-416ut4t8g-chas-projects-08028e73.vercel.app
-    description: Production server (Vercel) - Phase 4.1
+  - url: https://gets-logistics-api.vercel.app
+    description: Production server (Vercel)
 
 paths:
   /:
