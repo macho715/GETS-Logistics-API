@@ -1,5 +1,6 @@
 import os
-from flask import Flask, jsonify, request, abort
+from flask import Flask, jsonify, request, abort, send_from_directory
+from flask_cors import CORS
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from zoneinfo import ZoneInfo
@@ -17,6 +18,15 @@ from api.utils import (
     extract_field_by_id,
     DUBAI_TZ as DUBAI_TZ_UTILS,
 )
+from api.monitoring import (
+    logger,
+    slack,
+    perf_tracker,
+    sla_monitor,
+    check_airtable_connection,
+    check_schema_version,
+    check_protected_fields,
+)
 from airtable_locked_config import (
     BASE_ID,
     TABLES,
@@ -27,6 +37,25 @@ from airtable_locked_config import (
 )
 
 app = Flask(__name__)
+
+# ==================== CORS Configuration ====================
+CORS(app, resources={
+    r"/*": {
+        "origins": [
+            "https://chat.openai.com",
+            "https://chatgpt.com",
+            "http://localhost:*",
+            "http://127.0.0.1:*"
+        ],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "X-API-Key", "Authorization"],
+        "expose_headers": ["Content-Type"],
+        "supports_credentials": False,
+        "max_age": 3600
+    }
+})
+
+logger.info("CORS configured for ChatGPT Actions and local development")
 
 # ==================== Configuration ====================
 AIRTABLE_API_TOKEN = os.getenv("AIRTABLE_API_TOKEN")
@@ -367,6 +396,104 @@ def index():
             },
         }
     )
+
+
+# ==================== Swagger UI Endpoints ====================
+@app.route("/api/docs")
+@app.route("/api/docs/<path:path>")
+def swagger_ui(path=""):
+    """Swagger UI for API documentation"""
+    if path == "":
+        # Serve Swagger UI HTML
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>GETS API Documentation</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+        </head>
+        <body>
+            <div id="swagger-ui"></div>
+            <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+            <script>
+                SwaggerUIBundle({
+                    url: '/openapi-schema.yaml',
+                    dom_id: '#swagger-ui',
+                    presets: [
+                        SwaggerUIBundle.presets.apis,
+                        SwaggerUIBundle.SwaggerUIStandalonePreset
+                    ],
+                    layout: 'BaseLayout',
+                    deepLinking: true
+                });
+            </script>
+        </body>
+        </html>
+        """
+    return "", 404
+
+
+@app.route("/openapi-schema.yaml")
+def serve_openapi_schema():
+    """Serve OpenAPI schema"""
+    try:
+        with open("openapi-schema.yaml", "r", encoding="utf-8") as f:
+            schema_content = f.read()
+        from flask import Response
+        return Response(schema_content, mimetype="text/yaml")
+    except Exception as e:
+        logger.error(f"Failed to serve OpenAPI schema: {e}")
+        return jsonify({"error": "Schema not found"}), 404
+
+
+# ==================== Health Check Endpoints ====================
+@app.route("/health/detailed", methods=["GET"])
+def health_check_detailed():
+    """
+    Detailed health check with dependency validation
+    
+    Checks:
+    - Airtable connection
+    - Schema version consistency
+    - Protected fields count
+    - Performance metrics
+    """
+    checks = {
+        "airtable_connection": check_airtable_connection(),
+        "schema_version": check_schema_version(),
+        "protected_fields": check_protected_fields(),
+    }
+    
+    all_healthy = all(checks.values())
+    
+    # Get performance metrics
+    metrics = perf_tracker.get_metrics()
+    
+    # Get SLA violations
+    violations = sla_monitor.get_violations()
+    
+    return jsonify({
+        "status": "healthy" if all_healthy else "degraded",
+        "timestamp": now_dubai(),
+        "version": "1.8.0",
+        "checks": checks,
+        "performance": {
+            "endpoints": metrics,
+            "sla_violations": len(violations),
+            "recent_violations": violations[-10:] if violations else []
+        },
+        "dependencies": {
+            "airtable": {
+                "configured": airtable_client is not None,
+                "baseId": BASE_ID,
+                "tables": len(TABLES)
+            },
+            "schema_validator": {
+                "enabled": schema_validator is not None,
+                "version": SCHEMA_VERSION
+            }
+        }
+    }), 200 if all_healthy else 503
 
 
 @app.route("/health", methods=["GET"])
