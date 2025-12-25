@@ -44,7 +44,8 @@ def health():
 
 # Import full functionality if available
 try:
-    from .document_status import (
+    # Try absolute import for Vercel
+    from api.document_status import (
         get_status_summary,
         get_document_status,
         get_approval_status_by_shpt,
