@@ -726,7 +726,7 @@ def get_approval_status(shptNo: str):
         shipment_filter = f"{{shptNo}}='{shptNo}'"
         
         shipments = airtable_client.list_records(
-            table_id=TABLES["Shipments"],
+            table_id_or_name=TABLES["Shipments"],
             filter_by_formula=shipment_filter,
             fields=["shptNo"]
         )
@@ -743,7 +743,7 @@ def get_approval_status(shptNo: str):
         approval_filter = f"{{shptNo}}='{shptNo}'"
         
         approvals_raw = airtable_client.list_records(
-            table_id=TABLES["Approvals"],
+            table_id_or_name=TABLES["Approvals"],
             filter_by_formula=approval_filter,
             fields=[
                 "approvalKey", "shptNo", "approvalType", "status",
@@ -888,7 +888,7 @@ def get_approval_summary():
     try:
         # Fetch ALL approvals (with pagination)
         approvals_raw = airtable_client.list_records(
-            table_id=TABLES["Approvals"],
+            TABLES["Approvals"],
             fields=["approvalType", "status", "dueAt"],
             page_size=100
         )
@@ -1019,7 +1019,7 @@ def get_bottleneck_summary():
         filter_formula = "NOT({currentBottleneckCode}='')"
         
         shipments = airtable_client.list_records(
-            table_id=TABLES["Shipments"],
+            table_id_or_name=TABLES["Shipments"],
             filter_by_formula=filter_formula,
             fields=["shptNo", "currentBottleneckCode", "bottleneckSince", "riskLevel"],
             page_size=100
@@ -1027,7 +1027,7 @@ def get_bottleneck_summary():
         
         # Fetch bottleneck code definitions
         bottleneck_codes = airtable_client.list_records(
-            table_id=TABLES["BottleneckCodes"],
+            TABLES["BottleneckCodes"],
             fields=["code", "category", "description", "riskDefault", "slaHours"]
         )
         
@@ -1191,7 +1191,7 @@ def get_document_events(shptNo: str):
         shipment_filter = f"{{shptNo}}='{shptNo}'"
         
         shipments = airtable_client.list_records(
-            table_id=TABLES["Shipments"],
+            table_id_or_name=TABLES["Shipments"],
             filter_by_formula=shipment_filter,
             fields=["shptNo"]
         )
@@ -1208,7 +1208,7 @@ def get_document_events(shptNo: str):
         event_filter = f"{{shptNo}}='{shptNo}'"
         
         events_raw = airtable_client.list_records(
-            table_id=TABLES["Events"],
+            table_id_or_name=TABLES["Events"],
             filter_by_formula=event_filter,
             fields=[
                 "eventId", "timestamp", "entityType",
