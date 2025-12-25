@@ -41,6 +41,8 @@ class SchemaValidator:
             # Try common locations
             candidates = [
                 os.getenv("AIRTABLE_SCHEMA_LOCK_PATH"),
+                os.path.join(os.path.dirname(__file__), "airtable_schema.lock.json"),
+                "api/airtable_schema.lock.json",
                 "airtable_schema.lock.json",
                 "../airtable_schema.lock.json",
                 "out/airtable_schema.lock.json",
