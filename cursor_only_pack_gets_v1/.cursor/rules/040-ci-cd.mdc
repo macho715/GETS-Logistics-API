@@ -1,0 +1,9 @@
+---
+description: CI quality/security gates
+globs: [".github/workflows/**", ".pre-commit-config.yaml", "pyproject.toml", "requirements*.txt", "src/**", "tests/**"]
+alwaysApply: true
+---
+- Quality gate: coverage ≥ 85.00%.
+- Lint/format: ruff/black/isort must pass with 0 warnings.
+- Security gate: bandit High=0; pip-audit --strict must pass.
+- Pipeline target time: ≤ 5m (optimize if exceeded).

@@ -1,0 +1,8 @@
+---
+description: Modern Python guidance (py311 baseline)
+globs: ["src/**", "api/**", "tests/**"]
+alwaysApply: true
+---
+- Keep syntax compatible with Python 3.11.
+- Prefer dataclasses, type hints, and context managers.
+- Use ruff autofix where safe; pyupgrade uses --py311-plus.

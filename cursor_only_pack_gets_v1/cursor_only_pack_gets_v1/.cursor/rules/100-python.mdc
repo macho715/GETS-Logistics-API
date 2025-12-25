@@ -1,0 +1,10 @@
+---
+description: Python conventions (Vercel runtime aligned)
+globs: ["src/**", "api/**", "tests/**", "pyproject.toml", "requirements*.txt"]
+alwaysApply: true
+---
+- Target runtime: Python 3.11 (Vercel). Local tooling may use newer Python, but code must remain 3.11-compatible.
+- Prefer stdlib first. Keep dependencies minimal.
+- Secrets from env vars only (AIRTABLE_API_TOKEN, AIRTABLE_BASE_ID, API_KEY).
+- HTTP clients must set timeouts; Airtable client must enforce 5 RPS and pagination.
+- Logging must avoid PII; mask emails/phones.

@@ -1,0 +1,7 @@
+---
+description: Cursor workspace active mode
+globs: ["**/*"]
+alwaysApply: true
+---
+- Open on start: AGENTS.md, ARCHITECTURE.md (if present), README.md.
+- Prefer commands in .cursor/commands for repeatable operations.

@@ -1,0 +1,19 @@
+project:
+  name: "GETS Logistics API (HVDC)"
+  domain: "logistics"
+  runtime_python: "3.11"
+  timezone: "Asia/Dubai"
+  schema_version_lock: "2025-12-25T00:32:52+0400"
+  codeowners:
+    - "@repo-owner"
+    - "@tech-lead"
+quality_gates:
+  coverage_min: 85.00
+  lint_zero_warn: true
+security_gates:
+  bandit_high_zero: true
+  pip_audit_strict: true
+deploy_guard:
+  preflight_script: "scripts/deploy_preflight.sh"
+  health_path: "/health"
+  require_human_approval: true

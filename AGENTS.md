@@ -1,6 +1,6 @@
 # AGENTS.md — GETS Logistics API (Cursor Agent Codex)
 
-> **Authority**: This file is the **single source of truth** for Cursor Agent rules in this repo.  
+> **Authority**: This file is the **single source of truth** for Cursor Agent rules in this repo.
 > Place in **project root** as `AGENTS.md`.
 
 ## 0) Mission

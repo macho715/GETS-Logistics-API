@@ -1,0 +1,10 @@
+---
+description: GETS Logistics API domain rules (Airtable SSOT + Vercel deploy guard)
+globs: ["api/**", "src/**", "scripts/**", "vercel.json", "AGENTS.md", "ARCHITECTURE.md"]
+alwaysApply: true
+---
+- SSOT: Airtable Base; schema is locked by schemaVersion=2025-12-25T00:32:52+0400.
+- Any deploy workflow must run scripts/deploy_preflight.sh first; on failure, STOP.
+- Never propose or perform blind redeploy: production URL must be proven via /health.
+- If change is docs/comments only and preflight passes, recommend "no deploy needed".
+- If asked to deploy, require explicit human approval after showing preflight results.

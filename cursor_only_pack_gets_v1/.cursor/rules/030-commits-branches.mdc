@@ -1,0 +1,9 @@
+---
+description: Git workflow (Conventional Commits + short-lived branches)
+globs: [".git/**", "**/*"]
+alwaysApply: true
+---
+- Conventional Commits (e.g., feat:, fix:, refactor:, docs:, test:, chore:).
+- Branch model: Trunk(main) + short-lived feature/* (or fix/*).
+- PR gate: CODEOWNERS approvals ≥ 2 for protected paths.
+- No direct pushes to main in production repos.

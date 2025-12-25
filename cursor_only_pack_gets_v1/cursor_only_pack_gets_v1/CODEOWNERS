@@ -1,0 +1,33 @@
+# CODEOWNERS — Deployment & Schema Protection (GETS Logistics API)
+# Note: enforce via branch protection rules (required approvals >=2)
+
+*                       @repo-owner @tech-lead
+
+# Core agent governance
+/AGENTS.md              @repo-owner @tech-lead
+/CODEOWNERS             @repo-owner @tech-lead
+
+# Deployment & infra
+/vercel.json            @repo-owner @tech-lead
+/scripts/deploy_preflight.sh  @repo-owner @tech-lead
+
+# Schema lock & SSOT
+/schema/**              @repo-owner @data-owner
+/**/schema_validator.py @repo-owner @data-owner
+/**/schema_lock.py      @repo-owner @data-owner
+
+# Airtable integration (SSOT)
+**/airtable_client.py   @repo-owner @data-owner
+
+# API surface (runtime impact)
+/api/**                 @repo-owner @tech-lead
+/src/**                 @repo-owner @tech-lead
+
+# Monitoring / health
+**/health*.py           @repo-owner @tech-lead
+**/monitoring*.py       @repo-owner @tech-lead
+
+# Documentation
+/docs/**                @repo-owner
+README.md               @repo-owner
+ARCHITECTURE.md         @repo-owner

@@ -1,0 +1,12 @@
+---
+description: Core operating rules (Cursor-only)
+globs: ["**/*"]
+alwaysApply: true
+---
+- Output order: ExecSummary → Visual → Options → Roadmap → Automation → QA.
+- Numerics: fixed 2 decimals.
+- Timezone: Asia/Dubai (+04:00). Dates must be ISO (YYYY-MM-DD).
+- NDA/PII: do not disclose secrets (tokens/keys). Mask emails/phones if they appear.
+- Small diffs: implement the smallest change that satisfies Definition of Done.
+- Evidence-first: if you did not run a command/check, state it explicitly.
+- If required inputs are missing or ambiguous, follow ZERO stop in AGENTS.md.
