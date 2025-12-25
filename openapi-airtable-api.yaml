@@ -1,0 +1,468 @@
+openapi: 3.1.0
+info:
+  title: Airtable Direct API for GETS Logistics
+  version: 1.0.2
+  description: |
+    🟠 Airtable Direct API - Data Layer
+    
+    Direct access to Airtable for HVDC Project Logistics.
+    
+    **⚠️ USE WITH CAUTION**:
+    - No business logic validation
+    - No protected fields enforcement
+    - Direct data modification
+    - Requires authentication (Bearer Token)
+    
+    **Use this API for**:
+    - ⚠️ Updating records (status changes, field updates)
+    - ⚠️ Custom queries not available in GETS API
+    - ⚠️ Raw data access
+    - ⚠️ Bulk operations
+    
+    **Protected Fields** (warn before updating):
+    - shptNo, currentBottleneckCode, riskLevel, dueAt (Shipments)
+    - shptNo, docType, status (Documents)
+    - shptNo, status, priority, dueAt (Actions)
+    - timestamp, shptNo, entityType, toStatus (Events)
+    
+    **Base**: appnLz06h07aMm366
+    **Available Tables**: Shipments, Documents, Approvals, Actions, Events, 
+                         Evidence, BottleneckCodes, Owners, Vendors, Sites
+    
+    **Authentication**: Required (Airtable Personal Access Token)
+    
+servers:
+  - url: https://api.airtable.com/v0
+    description: Airtable API v0
+
+paths:
+  /{baseId}/{tableName}:
+    get:
+      summary: Get records from table
+      operationId: getRecords
+      description: |
+        Query records from any Airtable table with filtering and sorting.
+        
+        **Common Tables**:
+        - Shipments (tbl4NnKYx1ECKmaaC)
+        - Documents (tblbA8htgQSd2lOPO)
+        - Approvals (tblJh4z49DbjX7cyb)
+        - Actions (tblkDpCWYORAPqxhw)
+        - Events (tblGw5wKFQhR9FBRR)
+        - Evidence (tbljDDDNyvZY1sORx)
+        - BottleneckCodes (tblMad2YVdiN8WAYx)
+        - Owners (tblAjPArtKVBsShfE)
+        - Vendors (tblZ6Kc9EQP7Grx3B)
+        - Sites (tblSqSRWCe1IxCIih)
+        
+        **Filter Examples**:
+        - Single condition: `{shptNo}='SCT-0143'`
+        - Multiple conditions: `AND({riskLevel}='HIGH', {dueAt}<'2025-12-30')`
+        - OR condition: `OR({status}='PENDING', {status}='SUBMITTED')`
+        
+        **⚠️ Note**: Returns max 100 records per request. Use offset for pagination.
+        
+      parameters:
+        - name: baseId
+          in: path
+          required: true
+          description: Airtable Base ID (use appnLz06h07aMm366 for HVDC project)
+          schema:
+            type: string
+          example: appnLz06h07aMm366
+          
+        - name: tableName
+          in: path
+          required: true
+          description: |
+            Table name or Table ID.
+            Tables: Shipments, Documents, Approvals, Actions, Events, 
+                    Evidence, BottleneckCodes, Owners, Vendors, Sites
+          schema:
+            type: string
+          example: Shipments
+          
+        - name: maxRecords
+          in: query
+          description: Maximum number of records to return (default 100, max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 100
+          example: 10
+          
+        - name: pageSize
+          in: query
+          description: Number of records per page (max 100)
+          schema:
+            type: integer
+            maximum: 100
+          example: 100
+          
+        - name: offset
+          in: query
+          description: Offset for pagination (returned in response if more records exist)
+          schema:
+            type: string
+            
+        - name: view
+          in: query
+          description: Name or ID of view to use
+          schema:
+            type: string
+            
+        - name: sort[0][field]
+          in: query
+          description: Field name to sort by
+          schema:
+            type: string
+          example: shptNo
+          
+        - name: sort[0][direction]
+          in: query
+          description: Sort direction (asc or desc)
+          schema:
+            type: string
+            enum: [asc, desc]
+          example: asc
+          
+        - name: filterByFormula
+          in: query
+          description: |
+            Airtable formula to filter records.
+            
+            Examples:
+            - `{shptNo}='SCT-0143'`
+            - `{riskLevel}='HIGH'`
+            - `AND({riskLevel}='HIGH', IS_BEFORE({dueAt}, '2025-12-30'))`
+            - `OR({status}='PENDING', {status}='SUBMITTED')`
+            - `NOT({status}='COMPLETED')`
+          schema:
+            type: string
+          example: "{shptNo}='SCT-0143'"
+          
+        - name: fields[]
+          in: query
+          description: |
+            Specific fields to return (can specify multiple times).
+            If omitted, returns all fields.
+          schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: true
+          example: ["shptNo", "riskLevel", "dueAt"]
+          
+      security:
+        - BearerAuth: []
+        
+      responses:
+        '200':
+          description: List of records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Record ID (recXXXXXXX)
+                          example: recABC123XYZ
+                        createdTime:
+                          type: string
+                          format: date-time
+                        fields:
+                          type: object
+                          description: Record fields (varies by table)
+                          additionalProperties: true
+                  offset:
+                    type: string
+                    description: Use this for next page if more records exist
+              example:
+                records:
+                  - id: recABC123XYZ
+                    createdTime: "2025-12-24T10:00:00.000Z"
+                    fields:
+                      shptNo: "SCT-0143"
+                      currentBottleneckCode: "FANR_PENDING"
+                      riskLevel: "HIGH"
+                      dueAt: "2025-12-25T12:00:00.000Z"
+                offset: itrXXXXXXXXXXXXXX
+                
+        '401':
+          description: Unauthorized - check Bearer token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        example: AUTHENTICATION_REQUIRED
+                      message:
+                        type: string
+                        
+        '404':
+          description: Base or table not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        example: TABLE_NOT_FOUND
+                      message:
+                        type: string
+
+  /{baseId}/{tableName}/{recordId}:
+    get:
+      summary: Get single record
+      operationId: getRecord
+      description: Retrieve a single record by its ID
+      parameters:
+        - name: baseId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: appnLz06h07aMm366
+        - name: tableName
+          in: path
+          required: true
+          schema:
+            type: string
+          example: Shipments
+        - name: recordId
+          in: path
+          required: true
+          description: Airtable Record ID (recXXXXXXX)
+          schema:
+            type: string
+          example: recABC123XYZ
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Record details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  createdTime:
+                    type: string
+                  fields:
+                    type: object
+        '404':
+          description: Record not found
+    
+    patch:
+      summary: Update record
+      operationId: updateRecord
+      description: |
+        ⚠️ **CAUTION: Direct Data Modification**
+        
+        Updates an Airtable record. No validation layer!
+        
+        **Protected Fields** (use with care):
+        - Shipments: shptNo, currentBottleneckCode, bottleneckSince, riskLevel, 
+                     nextAction, actionOwner, dueAt
+        - Documents: shptNo, docType, status
+        - Actions: shptNo, status, priority, dueAt, actionText, owner
+        - Events: timestamp, shptNo, entityType, toStatus
+        
+        **Always**:
+        1. Get current record first (use getRecords)
+        2. Confirm changes with user
+        3. Update only necessary fields
+        4. Verify update with GETS API
+        
+        **Example Workflow**:
+        ```
+        1. getRecords to find record ID
+        2. Show current values to user
+        3. Ask confirmation
+        4. updateRecord
+        5. Call GETS API to verify
+        ```
+        
+      parameters:
+        - name: baseId
+          in: path
+          required: true
+          description: Airtable Base ID
+          schema:
+            type: string
+          example: appnLz06h07aMm366
+          
+        - name: tableName
+          in: path
+          required: true
+          description: Table name
+          schema:
+            type: string
+          example: Shipments
+          
+        - name: recordId
+          in: path
+          required: true
+          description: |
+            Airtable Record ID (recXXXXXXX)
+            Get this from getRecords operation first!
+          schema:
+            type: string
+          example: recABC123XYZ
+          
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fields
+              properties:
+                fields:
+                  type: object
+                  description: Fields to update (only include fields you want to change)
+                  additionalProperties: true
+                  example:
+                    currentBottleneckCode: "CLEARED"
+                    riskLevel: "LOW"
+            examples:
+              clearBottleneck:
+                summary: Clear bottleneck
+                value:
+                  fields:
+                    currentBottleneckCode: "CLEARED"
+                    riskLevel: "LOW"
+              updateStatus:
+                summary: Update document status
+                value:
+                  fields:
+                    status: "RELEASED"
+              updateDueDate:
+                summary: Update due date
+                value:
+                  fields:
+                    dueAt: "2025-12-30T12:00:00.000Z"
+                    
+      security:
+        - BearerAuth: []
+        
+      responses:
+        '200':
+          description: Record updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  createdTime:
+                    type: string
+                  fields:
+                    type: object
+                    description: Updated fields
+              example:
+                id: recABC123XYZ
+                createdTime: "2025-12-24T10:00:00.000Z"
+                fields:
+                  shptNo: "SCT-0143"
+                  currentBottleneckCode: "CLEARED"
+                  riskLevel: "LOW"
+                  
+        '401':
+          description: Unauthorized
+          
+        '404':
+          description: Record not found
+          
+        '422':
+          description: Invalid field names or values
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                        example: INVALID_REQUEST_BODY
+                      message:
+                        type: string
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        **Airtable Personal Access Token (PAT)**
+        
+        Required for ALL Airtable Direct API operations.
+        
+        **How to get your PAT**:
+        1. Go to https://airtable.com/create/tokens
+        2. Click "Create new token"
+        3. Name: "GETS Logistics GPT"
+        4. Add scopes:
+           - data.records:read
+           - data.records:write
+        5. Add access to base: appnLz06h07aMm366
+        6. Create token
+        7. Copy token (starts with "pat...")
+        
+        **In ChatGPT GPT**:
+        - Authentication Type: Bearer
+        - Token: paste your PAT (including "pat..." prefix)
+        
+        **Security**:
+        - ✅ Use read-only token if possible
+        - ⚠️ Never share your PAT
+        - 🔄 Rotate tokens monthly
+
+  schemas:
+    AirtableRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Airtable Record ID
+        createdTime:
+          type: string
+          format: date-time
+        fields:
+          type: object
+          description: Record fields
+          
+    AirtableError:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+            message:
+              type: string
+

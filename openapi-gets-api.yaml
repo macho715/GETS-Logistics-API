@@ -1,0 +1,484 @@
+openapi: 3.1.0
+info:
+  title: GETS Logistics API
+  version: 1.8.0
+  description: |
+    🔵 GETS API - Business Logic Layer
+    
+    HVDC Project Logistics API with built-in analytics and business logic.
+    
+    **Features**:
+    - Real-time Airtable data with business logic
+    - Automatic bottleneck detection and risk analysis
+    - D-5/D-15 SLA classification for approvals
+    - Protected fields enforcement
+    - Timezone normalization (Asia/Dubai +04:00)
+    - Offset paging, rate limiting, retry logic
+    - No authentication required
+    
+    **Use this API for**:
+    - ✅ Queries and status checks
+    - ✅ Analytics and KPI monitoring
+    - ✅ Bottleneck analysis
+    - ✅ Approval tracking with SLA
+    - ✅ Event history
+    
+    **Data Source**: Airtable Base `appnLz06h07aMm366`
+    **Schema Version**: 2025-12-25T00:32:52+0400
+    
+  x-airtable-baseId: appnLz06h07aMm366
+  x-airtable-schemaVersion: 2025-12-25T00:32:52+0400
+  x-protected-fields:
+    Shipments:
+      - shptNo
+      - currentBottleneckCode
+      - bottleneckSince
+      - riskLevel
+      - nextAction
+      - actionOwner
+      - dueAt
+    Documents:
+      - shptNo
+      - docType
+      - status
+    Actions:
+      - shptNo
+      - status
+      - priority
+      - dueAt
+      - actionText
+      - owner
+    Events:
+      - timestamp
+      - shptNo
+      - entityType
+      - toStatus
+
+servers:
+  - url: https://gets-416ut4t8g-chas-projects-08028e73.vercel.app
+    description: Production server (Vercel Serverless)
+
+paths:
+  /:
+    get:
+      summary: Get API information
+      operationId: getApiInfo
+      description: Returns API version, available endpoints, and system status
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                    example: GETS Logistics API
+                  version:
+                    type: string
+                    example: "1.8.0"
+                  endpoints:
+                    type: array
+                    items:
+                      type: string
+
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      description: Returns API health status, Airtable connection, and schema validation info
+      responses:
+        '200':
+          description: Health status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  version:
+                    type: string
+                  airtable:
+                    type: object
+                    properties:
+                      configured:
+                        type: boolean
+                      connected:
+                        type: boolean
+                      baseId:
+                        type: string
+                  schema:
+                    type: object
+
+  /document/status/{shptNo}:
+    get:
+      summary: Get document status packet
+      operationId: getDocumentStatus
+      description: |
+        Returns operational status packet including:
+        - Document status (BOE, DO, COO, HBL, CIPL)
+        - Bottleneck analysis (code, since, risk level)
+        - Next action (description, owner, due date)
+        - Evidence references
+        - Data lag metrics
+      parameters:
+        - name: shptNo
+          in: path
+          required: true
+          description: Shipment number (e.g., SCT-0143)
+          schema:
+            type: string
+          example: SCT-0143
+      responses:
+        '200':
+          description: Document status packet with analytics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shptNo:
+                    type: string
+                  doc:
+                    type: object
+                    properties:
+                      boeStatus:
+                        type: string
+                      doStatus:
+                        type: string
+                      cooStatus:
+                        type: string
+                      hblStatus:
+                        type: string
+                      ciplStatus:
+                        type: string
+                  bottleneck:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      since:
+                        type: string
+                      riskLevel:
+                        type: string
+                  action:
+                    type: object
+                    properties:
+                      nextAction:
+                        type: string
+                      owner:
+                        type: string
+                      dueAt:
+                        type: string
+                  evidence:
+                    type: array
+                    items:
+                      type: object
+                  meta:
+                    type: object
+                    properties:
+                      dataLagMinutes:
+                        type: integer
+                      lastUpdated:
+                        type: string
+        '404':
+          description: Shipment not found
+        '503':
+          description: Service unavailable
+
+  /approval/status/{shptNo}:
+    get:
+      summary: Get approval status
+      operationId: getApprovalStatus
+      description: |
+        Returns approval tracking with D-5/D-15 SLA classification:
+        - OVERDUE: Past due date
+        - CRITICAL: D-5 or less (0-5 days)
+        - HIGH: D-15 or less (6-15 days)
+        - NORMAL: More than 15 days
+      parameters:
+        - name: shptNo
+          in: path
+          required: true
+          description: Shipment number
+          schema:
+            type: string
+          example: SCT-0143
+      responses:
+        '200':
+          description: Approval status (empty array if no approvals)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shptNo:
+                    type: string
+                  approvals:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        approvalKey:
+                          type: string
+                        approvalType:
+                          type: string
+                        status:
+                          type: string
+                        submittedAt:
+                          type: string
+                        dueAt:
+                          type: string
+                        daysUntilDue:
+                          type: number
+                        priority:
+                          type: string
+                        owner:
+                          type: string
+                  summary:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      pending:
+                        type: integer
+                      approved:
+                        type: integer
+                      critical:
+                        type: integer
+                      overdue:
+                        type: integer
+        '404':
+          description: Shipment not found
+        '503':
+          description: Service unavailable
+
+  /approval/summary:
+    get:
+      summary: Get global approval summary
+      operationId: getApprovalSummary
+      description: Returns statistics for all approvals by type, status, and D-15/D-5/overdue buckets
+      responses:
+        '200':
+          description: Global approval summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                      pending:
+                        type: integer
+                      approved:
+                        type: integer
+                      rejected:
+                        type: integer
+                  byType:
+                    type: object
+                    description: Approval counts by type (FANR, MOEI, etc.)
+                  byStatus:
+                    type: object
+                  critical:
+                    type: object
+                    properties:
+                      overdue:
+                        type: integer
+                      d5:
+                        type: integer
+                      d15:
+                        type: integer
+                  lastUpdated:
+                    type: string
+        '503':
+          description: Service unavailable
+
+  /document/events/{shptNo}:
+    get:
+      summary: Get event history
+      operationId: getDocumentEvents
+      description: Returns chronological event ledger (latest first) for audit trail
+      parameters:
+        - name: shptNo
+          in: path
+          required: true
+          description: Shipment number
+          schema:
+            type: string
+          example: SCT-0143
+      responses:
+        '200':
+          description: Event history (may be empty array)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shptNo:
+                    type: string
+                  events:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        eventId:
+                          type: integer
+                        timestamp:
+                          type: string
+                        entityType:
+                          type: string
+                        fromStatus:
+                          type: string
+                        toStatus:
+                          type: string
+                        bottleneckCode:
+                          type: string
+                        actor:
+                          type: string
+                  total:
+                    type: integer
+        '404':
+          description: Shipment not found
+        '503':
+          description: Service unavailable
+
+  /status/summary:
+    get:
+      summary: Get KPI summary
+      operationId: getStatusSummary
+      description: Returns overall KPI metrics - shipment count, doc rates, risk distribution, top bottlenecks
+      responses:
+        '200':
+          description: KPI summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dataSource:
+                    type: string
+                  totalShipments:
+                    type: integer
+                  boeRate:
+                    type: number
+                  doRate:
+                    type: number
+                  cooRate:
+                    type: number
+                  hblRate:
+                    type: number
+                  ciplRate:
+                    type: number
+                  riskSummary:
+                    type: object
+                    properties:
+                      LOW:
+                        type: integer
+                      MEDIUM:
+                        type: integer
+                      HIGH:
+                        type: integer
+                      CRITICAL:
+                        type: integer
+                  topBottlenecks:
+                    type: array
+                    items:
+                      type: object
+        '503':
+          description: Service unavailable
+
+  /bottleneck/summary:
+    get:
+      summary: Get bottleneck analysis
+      operationId: getBottleneckSummary
+      description: Returns bottleneck statistics with aging distribution (24h/48h/72h+) and shipment lists
+      responses:
+        '200':
+          description: Bottleneck analysis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  byCategory:
+                    type: object
+                  byCode:
+                    type: object
+                  aging:
+                    type: object
+                    properties:
+                      under24h:
+                        type: integer
+                      h24to48:
+                        type: integer
+                      h48to72:
+                        type: integer
+                      over72h:
+                        type: integer
+                  topBottlenecks:
+                    type: array
+                    items:
+                      type: object
+                  totalActive:
+                    type: integer
+        '503':
+          description: Service unavailable
+
+  /ingest/events:
+    post:
+      summary: Ingest events
+      operationId: ingestEvents
+      description: Batch event ingestion with deduplication and rate-limiting (for RPA/ETL systems)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - events
+              properties:
+                batchId:
+                  type: string
+                  description: Unique batch identifier
+                  example: "2025-12-25_EDAS_0600"
+                sourceSystem:
+                  type: string
+                  description: Source system identifier
+                  example: "RPA"
+                timezone:
+                  type: string
+                  example: "Asia/Dubai"
+                events:
+                  type: array
+                  items:
+                    type: object
+      responses:
+        '200':
+          description: Events ingested successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  batchId:
+                    type: string
+                  ingested:
+                    type: integer
+                  timestamp:
+                    type: string
+        '400':
+          description: Bad request
+        '503':
+          description: Service unavailable
+
+# No authentication required
+
