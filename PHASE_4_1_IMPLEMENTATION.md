@@ -1,9 +1,11 @@
 # ✅ Phase 4.1 구현 완료 보고서
 
 **작업일**: 2025-12-25
-**Phase**: 4.1 - Approval/Bottleneck/Events Endpoints
+**Phase**: 4.1 - Approval/Bottleneck/Events Endpoints + Testing & Monitoring
 **상태**: ✅ **완료 및 배포 완료**
-**Git Commit**: bc2af2b
+**Git Commits**: 
+- bc2af2b (Phase 4.1 - Endpoints)
+- 94586ca (Phase 4.1.1 - Testing & Monitoring)
 
 ---
 
@@ -452,7 +454,98 @@ Total Test Coverage: 85%+ (estimated)
 
 ## 🎯 다음 단계 권장사항
 
-### 즉시 가능 (Phase 4.2)
+### ✅ Phase 4.1.1 완료 - Testing & Monitoring Infrastructure
+
+**작업일**: 2025-12-25
+**상태**: ✅ 완료 및 커밋됨 (Commit: 94586ca)
+
+#### 구현 완료 항목
+
+**1. Unit Tests (pytest)**
+- 📁 `tests/test_utils.py`: 35개 테스트 (100% pass)
+  - ✅ ISO datetime parsing (Z/UTC/naive)
+  - ✅ Timezone conversion (Asia/Dubai)
+  - ✅ Days until due calculation (2 decimals)
+  - ✅ Priority classification (D-5/D-15/Overdue)
+  - ✅ Rename-safe field extraction
+
+**테스트 결과**:
+```
+============================= test session starts =============================
+collected 35 items
+
+tests/test_utils.py::TestParseIsoAny::test_parse_z_utc_format PASSED     [  2%]
+... (33 tests omitted for brevity)
+tests/test_utils.py::TestIntegration::test_days_and_priority_workflow PASSED [100%]
+
+============================= 35 passed in 0.71s ==============================
+```
+
+**2. Load Tests (Locust)**
+- 📁 `tests/load_test.py`: 동시 사용자 시뮬레이션
+  - ✅ GETSApiUser: 일반 사용자 (health, summary, status)
+  - ✅ GETSApiAdminUser: 관리자 (ingest)
+  - ✅ Weight distribution: Health (30%), Summary (40%), Status (20%), Ingest (10%)
+  - ✅ Performance thresholds: <2s response time, >95% success rate
+
+**사용법**:
+```bash
+# 10 concurrent users, 30 seconds
+locust -f tests/load_test.py --users 10 --spawn-rate 2 --run-time 30s --headless
+
+# With web UI
+locust -f tests/load_test.py --host https://gets-416ut4t8g-chas-projects-08028e73.vercel.app
+```
+
+**3. Monitoring Utilities**
+- 📁 `api/monitoring.py`: Production-grade 모니터링
+  - ✅ **Structured Logging**: JSON formatter
+  - ✅ **Slack Alerts**: Webhook 통합 (error/warning/info)
+  - ✅ **Performance Tracking**: Endpoint metrics
+  - ✅ **SLA Monitoring**: D-5/D-15 violations
+  - ✅ **Health Checks**: Airtable/Schema/Protected Fields
+
+**4. pytest Fixtures**
+- 📁 `tests/conftest.py`: 테스트 재사용성
+  - ✅ Flask app fixture
+  - ✅ Mock AirtableClient
+  - ✅ Sample data fixtures (shipment, approval, event, bottleneck)
+
+**5. Quick Wins (운영 편의)**
+- ✅ **Swagger UI**: `/api/docs` (OpenAPI 문서 인터랙티브)
+- ✅ **CORS Configuration**: ChatGPT Actions + localhost 지원
+- ✅ **Detailed Health Check**: `/health/detailed` (dependency validation)
+
+#### 파일 변경 내역
+
+**새 파일**:
+- `tests/test_utils.py` (35 tests)
+- `tests/conftest.py` (fixtures)
+- `tests/load_test.py` (Locust)
+- `api/monitoring.py` (monitoring utilities)
+
+**수정 파일**:
+- `api/document_status.py` (CORS, Swagger UI, /health/detailed)
+- `requirements.txt` (flask-cors, pyyaml)
+- `PHASE_4_1_IMPLEMENTATION.md` (이 문서)
+
+#### 다음 단계 (선택사항)
+
+**Unit Tests - 엔드포인트별**:
+- 📋 `tests/test_approval_endpoints.py` (Deferred)
+  - 각 엔드포인트별 상세 테스트
+  - Mock Airtable client 사용
+  - Edge cases 커버리지
+
+**CI/CD 통합**:
+- 📋 GitHub Actions workflow
+  - pytest 자동 실행
+  - Coverage 리포트
+  - Load test on staging
+
+---
+
+### 즉시 가능 (Phase 4.2 - Optional)
 1. 🟢 **Unit Tests**: pytest 기반 단위 테스트 추가
 2. 🟢 **Load Tests**: locust 기반 성능 테스트
 3. 🟢 **API Documentation**: Swagger UI 통합
@@ -528,5 +621,7 @@ Total Test Coverage: 85%+ (estimated)
 **보고서 작성일**: 2025-12-25
 **API 버전**: 1.8.0
 **Schema Version**: 2025-12-25T00:32:52+0400
-**Git Commit**: bc2af2b
+**Git Commits**: 
+- bc2af2b (Phase 4.1 - Endpoints)
+- 94586ca (Phase 4.1.1 - Testing & Monitoring)
 
