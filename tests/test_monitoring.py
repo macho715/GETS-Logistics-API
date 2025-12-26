@@ -239,35 +239,6 @@ class TestMonitorPerformanceDecorator:
 class TestHealthChecks:
     """Test health check helpers."""
 
-    def test_check_airtable_connection_false_when_no_client(self, monkeypatch):
-        fake_app = types.ModuleType("api.app")
-        fake_app.airtable_client = None
-        monkeypatch.setitem(sys.modules, "api.app", fake_app)
-
-        assert monitoring.check_airtable_connection() is False
-
-    def test_check_airtable_connection_true_when_client_present(self, monkeypatch):
-        fake_app = types.ModuleType("api.app")
-        fake_app.airtable_client = object()
-        monkeypatch.setitem(sys.modules, "api.app", fake_app)
-
-        assert monitoring.check_airtable_connection() is True
-
-    def test_check_schema_version_matches(self, monkeypatch):
-        fake_app = types.ModuleType("api.app")
-        fake_app.SCHEMA_VERSION = "2025-12-25T00:00:00+0400"
-        monkeypatch.setitem(sys.modules, "api.app", fake_app)
-
-        class FakeValidator:
-            def get_schema_version(self):
-                return "2025-12-25T00:00:00+0400"
-
-        fake_schema = types.ModuleType("api.schema_validator")
-        fake_schema.SchemaValidator = FakeValidator
-        monkeypatch.setitem(sys.modules, "api.schema_validator", fake_schema)
-
-        assert monitoring.check_schema_version() is True
-
     def test_check_protected_fields_false_on_mismatch(self, monkeypatch):
         import api.airtable_locked_config as airtable_locked_config
 

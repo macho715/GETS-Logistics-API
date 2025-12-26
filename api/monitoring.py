@@ -327,37 +327,6 @@ sla_monitor = SLAMonitor()
 
 
 # ==================== Health Check Utilities ====================
-def check_airtable_connection() -> bool:
-    """Check Airtable connection"""
-    try:
-        from api.app import airtable_client
-
-        if not airtable_client:
-            return False
-
-        # Try a simple list operation with limit 1
-        # This is a lightweight check
-        return True
-    except Exception as e:
-        logger.error(f"Airtable connection check failed: {e}")
-        return False
-
-
-def check_schema_version() -> bool:
-    """Check schema version consistency"""
-    try:
-        from api.app import SCHEMA_VERSION
-        from api.schema_validator import SchemaValidator
-
-        validator = SchemaValidator()
-        current_version = validator.get_schema_version()
-
-        return current_version == SCHEMA_VERSION
-    except Exception as e:
-        logger.error(f"Schema version check failed: {e}")
-        return False
-
-
 def check_protected_fields() -> bool:
     """Check protected fields count"""
     try:

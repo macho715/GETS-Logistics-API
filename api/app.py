@@ -29,8 +29,6 @@ from api.monitoring import (
     slack,
     perf_tracker,
     sla_monitor,
-    check_airtable_connection,
-    check_schema_version,
     check_protected_fields,
 )
 from api.airtable_locked_config import (
@@ -450,6 +448,34 @@ def serve_openapi_schema():
     except Exception as e:
         logger.error(f"Failed to serve OpenAPI schema: {e}")
         return jsonify({"error": "Schema not found"}), 404
+
+
+# ==================== Health Check Utilities ====================
+def check_airtable_connection() -> bool:
+    """Check Airtable connection"""
+    if not airtable_client:
+        return False
+    try:
+        # Test connection with Shipments table
+        test_records = airtable_client.list_records(
+            TABLES_LOWER["shipments"], page_size=1
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Airtable connection check failed: {e}")
+        return False
+
+
+def check_schema_version() -> bool:
+    """Check schema version consistency"""
+    if not schema_validator:
+        return False
+    try:
+        current_version = schema_validator.get_schema_version()
+        return current_version == SCHEMA_VERSION
+    except Exception as e:
+        logger.error(f"Schema version check failed: {e}")
+        return False
 
 
 # ==================== Health Check Endpoints ====================
