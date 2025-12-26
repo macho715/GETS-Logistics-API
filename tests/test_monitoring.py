@@ -240,23 +240,23 @@ class TestHealthChecks:
     """Test health check helpers."""
 
     def test_check_airtable_connection_false_when_no_client(self, monkeypatch):
-        fake_doc = types.ModuleType("api.document_status")
-        fake_doc.airtable_client = None
-        monkeypatch.setitem(sys.modules, "api.document_status", fake_doc)
+        fake_app = types.ModuleType("api.app")
+        fake_app.airtable_client = None
+        monkeypatch.setitem(sys.modules, "api.app", fake_app)
 
         assert monitoring.check_airtable_connection() is False
 
     def test_check_airtable_connection_true_when_client_present(self, monkeypatch):
-        fake_doc = types.ModuleType("api.document_status")
-        fake_doc.airtable_client = object()
-        monkeypatch.setitem(sys.modules, "api.document_status", fake_doc)
+        fake_app = types.ModuleType("api.app")
+        fake_app.airtable_client = object()
+        monkeypatch.setitem(sys.modules, "api.app", fake_app)
 
         assert monitoring.check_airtable_connection() is True
 
     def test_check_schema_version_matches(self, monkeypatch):
-        fake_doc = types.ModuleType("api.document_status")
-        fake_doc.SCHEMA_VERSION = "2025-12-25T00:00:00+0400"
-        monkeypatch.setitem(sys.modules, "api.document_status", fake_doc)
+        fake_app = types.ModuleType("api.app")
+        fake_app.SCHEMA_VERSION = "2025-12-25T00:00:00+0400"
+        monkeypatch.setitem(sys.modules, "api.app", fake_app)
 
         class FakeValidator:
             def get_schema_version(self):
