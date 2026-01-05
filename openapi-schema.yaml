@@ -82,6 +82,7 @@ paths:
                     type: array
                     items:
                       type: string
+      security: []
 
   /health:
     get:
@@ -112,6 +113,7 @@ paths:
                         type: string
                   schema:
                     type: object
+      security: []
 
   /shipments/verify:
     get:
@@ -130,19 +132,6 @@ paths:
           schema:
             type: string
           example: "HE-0512,HE-0513,SCT-0151"
-        - name: X-API-Key
-          in: header
-          required: false
-          description: API key for authentication (optional, enforced if API_KEY env is set)
-          schema:
-            type: string
-        - name: Authorization
-          in: header
-          required: false
-          description: Bearer token for authentication (alternative to X-API-Key)
-          schema:
-            type: string
-            example: "Bearer <API_KEY>"
       responses:
         '200':
           description: Shipment verification data
@@ -340,6 +329,7 @@ paths:
           description: Shipment not found
         '503':
           description: Service unavailable
+      security: []
 
   /approval/status/{shptNo}:
     get:
@@ -407,6 +397,7 @@ paths:
           description: Shipment not found
         '503':
           description: Service unavailable
+      security: []
 
   /approval/summary:
     get:
@@ -450,6 +441,7 @@ paths:
                     type: string
         '503':
           description: Service unavailable
+      security: []
 
   /document/events/{shptNo}:
     get:
@@ -544,6 +536,7 @@ paths:
                       type: object
         '503':
           description: Service unavailable
+      security: []
 
   /bottleneck/summary:
     get:
@@ -581,6 +574,7 @@ paths:
                     type: integer
         '503':
           description: Service unavailable
+      security: []
 
   /ingest/events:
     post:
@@ -631,18 +625,16 @@ paths:
           description: Bad request
         '503':
           description: Service unavailable
+      security: []
 
 components:
+  schemas: {}
   securitySchemes:
     apiKeyAuth:
       type: apiKey
       in: header
       name: X-API-Key
       description: Optional API key (enforced only if API_KEY env var is set)
-    bearerAuth:
-      type: http
-      scheme: bearer
-      description: Optional Bearer token (alternative to X-API-Key)
 
 # Authentication is optional unless API_KEY is configured
 
