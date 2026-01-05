@@ -350,6 +350,7 @@ git push origin main
 | GET | `/` | API 정보 |
 | GET | `/health` | 헬스체크 |
 | GET | `/health/detailed` | 상세 헬스체크 |
+| GET | `/shipments/verify` | Verify shipments (GPTs Action) |
 | GET | `/document/status/{shptNo}` | 문서 상태 조회 |
 | GET | `/approval/status/{shptNo}` | 승인 상태 조회 |
 | GET | `/approval/summary` | 전체 승인 요약 |
@@ -367,6 +368,7 @@ git push origin main
 - [ ] `AIRTABLE_API_TOKEN` 환경변수 설정
 - [ ] 첫 배포 성공
 - [ ] `/health` 엔드포인트 테스트 통과
+- [ ] `/shipments/verify` 엔드포인트 테스트 통과
 - [ ] `/status/summary` 실제 데이터 반환 확인
 - [ ] ChatGPT Actions 연결 완료
 - [ ] ChatGPT에서 테스트 성공

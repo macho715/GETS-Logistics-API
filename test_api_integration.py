@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, List
 
 # Test configuration
-BASE_URL = "https://gets-416ut4t8g-chas-projects-08028e73.vercel.app"  # Production URL
+BASE_URL = "https://gets-logistics-api.vercel.app"  # Production URL
 TEST_SHPT_NO = "SCT-0143"
 
 

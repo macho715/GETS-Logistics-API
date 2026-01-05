@@ -113,14 +113,14 @@ ChatGPT GPT 설정의 "Conversation starters"에 아래 4개 문장을 입력하
 ## 📝 ChatGPT GPT 설정 방법
 
 ### Step 1: GPT Configure 페이지 열기
-1. ChatGPT 접속
-2. 왼쪽 메뉴에서 "Your GPTs" 클릭
-3. "GETS Logistics GPT" 선택
+1. ChatGPT 접속 (ChatGPT Plus 계정 필요)
+2. 왼쪽 메뉴에서 "Explore GPTs" 또는 "Your GPTs" 클릭
+3. "GETS Logistics GPT" 선택 또는 "Create a GPT" 클릭
 4. "Configure" 탭 클릭
 
 ### Step 2: Conversation starters 섹션 찾기
 - 페이지를 아래로 스크롤
-- "Conversation starters" 섹션 찾기 (Name, Description 아래)
+- "Conversation starters" 섹션 찾기 (Name, Description, Instructions 아래)
 - 4개의 입력란이 있음
 
 ### Step 3: 4개 문장 입력
@@ -134,8 +134,29 @@ ChatGPT GPT 설정의 "Conversation starters"에 아래 4개 문장을 입력하
 ```
 
 ### Step 4: Save & Publish
-- 페이지 상단의 "Update" 또는 "Save" 버튼 클릭
+- 페이지 상단의 "Save" 버튼 클릭
+- Visibility 선택:
+  - **Only me** - 비공개 (개인용)
+  - **Anyone with a link** - 링크 공유 가능
+  - **Public** - GPT Store에 공개 (검토 필요)
 - 변경사항이 즉시 적용됨
+
+### Step 5: GPT Store 공유 (선택사항)
+
+**GPT Store에 공개하려면:**
+1. "Save" 후 "Publish" 또는 "Share" 선택
+2. GPT Store 검토 대기 (보통 1-3일)
+3. 승인 후 GPT Store에서 발견 가능
+
+**GPT Store 공유 장점:**
+- 다른 사용자들이 GPT를 쉽게 찾아 사용 가능
+- 평점 및 피드백 받기 가능
+- 사용량 통계 확인 가능
+
+**보안 고려사항:**
+- Public으로 공개하면 모든 사용자가 GPT에 접근 가능
+- Instructions에 민감한 정보 포함 여부 확인
+- API 토큰은 Authentication에만 저장 (Instructions에 포함 금지)
 
 ---
 
@@ -189,6 +210,19 @@ Conversation starters 설정 후 테스트:
 
 ---
 
+## 🔒 Security & Privacy Considerations
+
+### Important Security Notes
+1. **Never include sensitive data** - Conversation starters should not contain API keys, tokens, or personal information
+2. **Public GPTs** - If sharing publicly, ensure no confidential shipment numbers or data exposed
+3. **User data** - All queries and responses may be logged by OpenAI for service improvement (can be disabled in settings)
+4. **API authentication** - Tokens are securely stored by OpenAI, never exposed in Instructions or starters
+
+### Privacy Best Practices
+- Use generic examples (SCT-0143) rather than real shipment numbers in public starters
+- Remind users not to input sensitive information in conversations
+- Ensure protected fields warnings are always displayed before updates
+
 ## 📞 문의 및 피드백
 
 Conversation starters가 작동하지 않으면:
@@ -196,10 +230,20 @@ Conversation starters가 작동하지 않으면:
 2. GETS API와 Airtable API 모두 연결되었는지 확인
 3. 각 스타터를 개별적으로 테스트
 4. 에러 메시지를 확인하고 API 상태 점검
+5. Authentication 설정 확인 (Bearer token 올바르게 설정되었는지)
+
+---
+
+## 📚 Additional Resources
+
+- **OpenAI GPTs Documentation**: https://help.openai.com/ko-kr/collections/8475420-gpts
+- **GPT Store**: https://chat.openai.com/gpts
+- **OpenAPI 3.1 Specification**: https://swagger.io/specification/
 
 ---
 
 **Updated**: 2025-12-25
-**Version**: 1.0.0
+**Version**: 1.1.0
 **For**: GETS Logistics GPT (Dual-Action Architecture)
+**Last Updated**: Added security guidelines, GPT Store information, and authentication setup details
 

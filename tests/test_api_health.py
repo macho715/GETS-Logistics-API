@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, List, Tuple
 
 # API Base URL
-API_BASE_URL = "https://gets-45ywvkhui-chas-projects-08028e73.vercel.app"
+API_BASE_URL = "https://gets-logistics-api.vercel.app"
 
 # Performance SLA (MACHO-GPT Standards)
 MAX_RESPONSE_TIME = 2.0  # seconds

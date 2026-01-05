@@ -3,8 +3,8 @@
 ## 📋 Document Information
 
 **Project**: GETS Logistics API for HVDC Project
-**Version**: 1.7.0 (SpecPack v1.0 + Locked Mapping)
-**Last Updated**: 2025-12-25
+**Version**: 1.8.0 (SpecPack v1.0 + Locked Mapping + Health Check Fix)
+**Last Updated**: 2025-12-27
 **Timezone**: Asia/Dubai (+04:00)
 **Deployment**: Vercel Serverless (Production)
 **Production URL**: https://gets-logistics-api.vercel.app
@@ -41,7 +41,7 @@ graph TB
     end
 
     subgraph "Application Layer - Vercel Serverless"
-        FLASK[Flask API<br/>document_status.py]
+        FLASK[Flask API<br/>app.py]
 
         subgraph "Core Modules"
             AIRTABLE_CLIENT[Airtable Client<br/>Rate Limiting: 5 RPS]
@@ -119,7 +119,7 @@ sequenceDiagram
     participant AIRTABLE as Airtable Base
 
     GPT->>VERCEL: GET /approval/summary
-    VERCEL->>API: Route to /api/document_status
+    VERCEL->>API: Route to /api/app
 
     API->>VALIDATOR: Validate schema version
     VALIDATOR-->>API: ✓ Lock match (2025-12-25)
@@ -145,7 +145,7 @@ sequenceDiagram
 ```mermaid
 graph LR
     subgraph "api/ Package"
-        DS[document_status.py<br/>Main Flask App<br/>1,418 lines]
+        APP[app.py<br/>Main Flask App<br/>~1,240 lines]
 
         AC[airtable_client.py<br/>HTTP Client<br/>Rate Limiting]
 
@@ -160,32 +160,86 @@ graph LR
         LS[airtable_schema.lock.json<br/>Full Schema<br/>Immutable Snapshot]
     end
 
-    DS -->|Import| AC
-    DS -->|Import| SV
-    DS -->|Import| MON
-    DS -->|Import| UT
-    DS -->|Import| LC
+    APP -->|Import| AC
+    APP -->|Import| SV
+    APP -->|Import| MON
+    APP -->|Import| UT
+    APP -->|Import| LC
 
     SV -->|Load| LS
     MON -->|Import| LC
 
     AC -->|HTTP| AIRTABLE_API[Airtable REST API<br/>api.airtable.com]
 
-    style DS fill:#4a90e2
+    style APP fill:#4a90e2
     style LC fill:#e74c3c
     style LS fill:#e74c3c
 ```
 
 ---
 
+## 🏥 Health Check Architecture
+
+### **Health Check Functions Location**
+
+Health check functions are located in `api/app.py` to avoid circular import issues:
+
+```python
+# api/app.py
+def check_airtable_connection() -> bool:
+    """Check Airtable connection"""
+    if not airtable_client:
+        return False
+    try:
+        test_records = airtable_client.list_records(
+            TABLES_LOWER["shipments"], page_size=1
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Airtable connection check failed: {e}")
+        return False
+
+def check_schema_version() -> bool:
+    """Check schema version consistency"""
+    if not schema_validator:
+        return False
+    try:
+        current_version = schema_validator.get_schema_version()
+        return current_version == SCHEMA_VERSION
+    except Exception as e:
+        logger.error(f"Schema version check failed: {e}")
+        return False
+```
+
+### **Health Check Endpoints**
+
+- `GET /health`: Basic health check with Airtable connection status
+- `GET /health/detailed`: Detailed health check with:
+  - Airtable connection validation
+  - Schema version consistency
+  - Protected fields count
+  - Performance metrics
+  - SLA violations
+
+### **Circular Import Resolution (2025-12-27)**
+
+**Problem**: Health check functions in `api.monitoring` were importing from `api.app`, causing circular import.
+
+**Solution**: Moved `check_airtable_connection()` and `check_schema_version()` to `api.app` module.
+
+**Status**: ✅ Resolved
+
+---
+
 ## 🌐 API Endpoints
 
-### **Core Endpoints (9 total)**
+### **Core Endpoints (10 total)**
 
 ```mermaid
 graph TB
     ROOT[/ <br/>API Info + Features]
     HEALTH[/health<br/>System Status]
+    HEALTH_DETAILED[/health/detailed<br/>Detailed Health Check]
 
     STATUS_SUMMARY[/status/summary<br/>Global Shipment KPIs]
     DOC_STATUS[/document/status/:shptNo<br/>Document Status by Shipment]
@@ -200,7 +254,8 @@ graph TB
     INGEST[POST /ingest/events<br/>Event Recording]
 
     ROOT --> HEALTH
-    HEALTH --> STATUS_SUMMARY
+    HEALTH --> HEALTH_DETAILED
+    HEALTH_DETAILED --> STATUS_SUMMARY
     STATUS_SUMMARY --> DOC_STATUS
     DOC_STATUS --> APPR_STATUS
     APPR_STATUS --> APPR_SUMMARY
@@ -210,6 +265,7 @@ graph TB
 
     style ROOT fill:#2ecc71
     style HEALTH fill:#3498db
+    style HEALTH_DETAILED fill:#3498db
     style APPR_SUMMARY fill:#e74c3c
 ```
 
@@ -219,6 +275,8 @@ graph TB
 |----------|--------|---------|-----------------|---------------|
 | `/` | GET | API metadata | - | <100ms |
 | `/health` | GET | Health check | All (metadata) | <500ms |
+| `/health/detailed` | GET | Detailed health check | All (validation) | <1s |
+| `/shipments/verify` | GET | Verify multiple shipments (GPTs Action) | Shipments | 500ms-1s |
 | `/status/summary` | GET | Shipment overview | Shipments | 1-2s |
 | `/document/status/:shptNo` | GET | Doc status detail | Shipments, Documents | 500ms-1s |
 | `/approval/status/:shptNo` | GET | Approval detail | Shipments, Approvals | 500ms-1s |
@@ -834,7 +892,7 @@ graph LR
 # vercel.json
 rewrites:
   - source: "/(.*)"
-    destination: "/api/document_status"
+    destination: "/api/app"
 
 headers:
   - source: "/api/(.*)"
@@ -860,6 +918,28 @@ pyyaml==6.0.1
 ---
 
 ## 🚨 Known Issues & Troubleshooting
+
+### **Resolved: Circular Import in Health Checks (2025-12-27)**
+
+**Problem**: Health check functions in `api.monitoring` were importing from `api.app`, causing circular import when `/health/detailed` endpoint was called.
+
+**Symptoms**:
+- `ImportError: cannot import name 'check_airtable_connection' from 'api.app'`
+- `/health/detailed` returning incorrect status for `airtable_connection` and `schema_version`
+
+**Root Cause**:
+- `api.monitoring` imported health check functions from `api.app`
+- `api.app` imported monitoring utilities from `api.monitoring`
+- Circular dependency created
+
+**Solution**:
+- Moved `check_airtable_connection()` and `check_schema_version()` functions to `api.app` module
+- Updated imports in `api.monitoring` to remove circular dependency
+- Updated test mocks to reflect new function locations
+
+**Status**: ✅ Resolved
+
+---
 
 ### **Current Issue: Vercel Cache (2025-12-25)**
 
@@ -892,7 +972,7 @@ Status: 500 Internal Server Error
 
 | Error | Cause | Solution |
 |-------|-------|----------|
-| `ModuleNotFoundError: api.document_status` | File renamed/deleted | Check vercel.json destination |
+| `ModuleNotFoundError: api.app` | File renamed/deleted | Check vercel.json destination |
 | `table_id unexpected keyword` | Cached old code | Clear Vercel cache |
 | `Schema lock file not found` | Wrong search path | Check schema_validator.py candidates |
 | `503 Service Unavailable` | Import chain broken | Check all import statements |
@@ -1038,7 +1118,7 @@ cp .env.example .env
 pytest tests/ -v
 
 # 4. Local Development
-flask --app api.document_status run --port 5000
+flask --app api.app run --port 8000
 # or
 vercel dev
 
@@ -1084,6 +1164,8 @@ git push origin main
 
 | Date | Version | Changes |
 |------|---------|---------|
+| 2025-12-27 | 1.8.0 | Fixed health check circular import, moved functions to api.app |
+| 2025-12-26 | 1.7.1 | Resolved monitoring.py import path issues |
 | 2025-12-25 | 1.7.0 | Production deployment with schema lock |
 | 2025-12-24 | 1.6.0 | Added monitoring & SLA tracking |
 | 2025-12-23 | 1.5.0 | Schema validator implementation |
@@ -1093,4 +1175,4 @@ git push origin main
 
 **Document Maintained By**: GETS Development Team
 **Contact**: [Insert Contact Info]
-**Last Review**: 2025-12-25
+**Last Review**: 2025-12-27

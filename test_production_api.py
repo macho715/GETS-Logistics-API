@@ -7,7 +7,7 @@ import requests
 import json
 from datetime import datetime
 
-BASE_URL = "https://gets-416ut4t8g-chas-projects-08028e73.vercel.app"
+BASE_URL = "https://gets-logistics-api.vercel.app"
 
 
 def test_endpoint(method, path, description):

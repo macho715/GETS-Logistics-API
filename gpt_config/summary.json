@@ -1,0 +1,21 @@
+{
+  "gpt_name": "GETS Logistics Assistant",
+  "gpt_description": "HVDC Project Logistics Assistant with real-time Airtable integration",
+  "instructions_length": 6091,
+  "instructions_valid": true,
+  "conversation_starters_count": 4,
+  "openapi_schema": {
+    "title": "Airtable Direct API for GETS Logistics",
+    "version": "1.0.4"
+  },
+  "knowledge_files": {
+    "total": 3,
+    "found": 3,
+    "missing": 0,
+    "over_limit": {
+      "count_exceeded": false,
+      "files_over_512mb": []
+    }
+  },
+  "generated_at": "2026-01-06T00:02:09+04:00"
+}

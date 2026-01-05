@@ -24,7 +24,7 @@ class SchemaDriftDetector:
     def __init__(
         self,
         openapi_path: str = "openapi.locked.v2.yaml",
-        schema_lock_path: str = "airtable_schema.lock.json",
+        schema_lock_path: str = "api/airtable_schema.lock.json",
         protected_fields_path: str = "protected_fields.json",
         api_url: str = None,
     ):
@@ -79,12 +79,14 @@ class SchemaDriftDetector:
 
                     # Extract protected fields count
                     protected_section = re.search(
-                        r"x-protected-fields:(.*?)(?=\n  \w+:|$)", content, re.DOTALL
+                        r"x-protected-fields:(.*?)(?=\n  # |\n  x-|\npaths:|$)", content, re.DOTALL
                     )
                     if protected_section:
+                        # Count all field entries (lines starting with "      - " or "    - ")
+                        # Matches: "      - shptNo" or "    - shptNo"
                         fields_count = len(
                             re.findall(
-                                r"^\s+- \w+", protected_section.group(1), re.MULTILINE
+                                r"^\s{4,6}- \w+", protected_section.group(1), re.MULTILINE
                             )
                         )
                         if not schema.get("info"):

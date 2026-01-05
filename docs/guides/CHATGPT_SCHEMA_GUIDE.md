@@ -4,14 +4,14 @@
 
 **Production Schema**:
 ```
-https://gets-416ut4t8g-chas-projects-08028e73.vercel.app/openapi-schema.yaml
+https://gets-logistics-api.vercel.app/openapi-schema.yaml
 ```
 
 ## 📊 Schema Overview
 
 ### API Information
 - **Version**: 1.8.0
-- **Base URL**: https://gets-416ut4t8g-chas-projects-08028e73.vercel.app
+- **Base URL**: https://gets-logistics-api.vercel.app
 - **Schema Version**: 2025-12-25T00:32:52+0400
 - **Airtable Base**: appnLz06h07aMm366
 
@@ -91,16 +91,36 @@ Batch event ingestion with deduplication and rate-limiting. For RPA/ETL systems.
 
 ## 🚀 ChatGPT Actions Setup Guide
 
-### Step 1: Import Schema
-1. Go to your GPT settings
-2. Click "Actions" → "Create new action"
-3. Click "Import from URL"
-4. Paste: `https://gets-416ut4t8g-chas-projects-08028e73.vercel.app/openapi-schema.yaml`
+### Prerequisites
+- **ChatGPT Plus subscription** (required for GPTs feature)
+- **Access to GPT Builder** (ChatGPT → Explore GPTs → Create)
 
-### Step 2: Verify Import
-Check that all 9 operations are loaded:
+### Step 1: Create New GPT
+1. Go to ChatGPT
+2. Click "Explore GPTs" in left sidebar
+3. Click "Create a GPT" or "My GPTs" → "Create"
+4. Choose "Configure" tab (manual configuration)
+
+### Step 2: Import Schema
+1. In GPT Builder, scroll to "Actions" section
+2. Click "Create new action"
+3. Click "Import from URL"
+4. Paste: `https://gets-logistics-api.vercel.app/openapi-schema.yaml`
+5. Wait for schema import to complete
+
+### Step 3: Configure Authentication
+1. In Actions section, find "Authentication"
+2. Select "Bearer" authentication type
+3. Enter your Airtable Personal Access Token (PAT)
+   - **Never share this token** - It's securely stored by OpenAI
+   - Token scopes required: `data.records:read`, `data.records:write`
+4. Test connection if available
+
+### Step 4: Verify Import
+Check that all 10 operations are loaded:
 - ✅ getApiInfo
 - ✅ getHealth
+- ✅ verifyShipments
 - ✅ getDocumentStatus
 - ✅ getApprovalStatus
 - ✅ getApprovalSummary
@@ -109,8 +129,31 @@ Check that all 9 operations are loaded:
 - ✅ getBottleneckSummary
 - ✅ ingestEvents
 
-### Step 3: Test Endpoints
-Try these queries in your GPT:
+### Step 5: Upload Knowledge Files
+1. Scroll to "Knowledge" section
+2. Click "Upload files"
+3. Upload the following files:
+   - `Excel_Batch_Upload_Workflow.md`
+   - `Common_Workflows.md`
+   - `CHATGPT_SCHEMA_GUIDE.md` (optional, already in Instructions)
+4. Wait for processing to complete
+
+### Step 6: Configure Instructions
+1. Scroll to "Instructions" field
+2. Copy content from `GPT_INSTRUCTIONS.md` (ensure within 8,000 character limit)
+3. Paste into Instructions field
+
+### Step 7: Set Conversation Starters
+1. Scroll to "Conversation starters" section
+2. Add 4 conversation starters (see `GPT_CONVERSATION_STARTERS.md`)
+3. Example:
+   - 📊 현재 병목(bottleneck) 상황을 요약해줘
+   - 🚢 SCT-0143 선적 상태를 자세히 보여줘
+   - ⏰ D-5 또는 초과된 승인 건이 있어?
+   - 📈 오늘의 KPI 대시보드를 보여줘
+
+### Step 8: Test Endpoints
+Try these queries in your GPT preview:
 ```
 "Show me current bottlenecks"
 "What's the status of SCT-0143?"
@@ -118,6 +161,14 @@ Try these queries in your GPT:
 "Give me KPI summary"
 "Show approval status for SCT-0143"
 ```
+
+### Step 9: Save and Publish
+1. Click "Save" button (top right)
+2. Choose visibility:
+   - **Only me** - Private GPT
+   - **Anyone with a link** - Shareable link
+   - **Public** - Available in GPT Store (requires review)
+3. Click "Confirm" to save
 
 ---
 
@@ -139,6 +190,49 @@ Try these queries in your GPT:
 - 🔁 Retry logic (429, 503)
 - 📦 Batch operations (≤10 records/req)
 - 🔒 Upsert support (idempotent ingest)
+
+---
+
+## 🔐 Security & Authentication
+
+### Actions Authentication Setup
+
+**Recommended Authentication Method:**
+- **Bearer Token** (for Airtable Personal Access Token)
+- **API Key** (for custom API authentication)
+
+**Security Best Practices:**
+1. **Never hardcode tokens** - Use ChatGPT Actions authentication settings
+2. **Token scopes** - Use minimal required scopes for Airtable PAT
+   - Required: `data.records:read`, `data.records:write`
+   - Optional: `schema.bases:read`
+3. **Token rotation** - Rotate tokens periodically for security
+4. **Environment separation** - Use different tokens for production and development
+5. **Secure storage** - OpenAI securely stores authentication tokens, never expose in Instructions
+
+### OpenAPI 3.1 Requirements
+
+**GPTs Actions Requirements:**
+- ✅ OpenAPI 3.1 schema format (current schema compliant)
+- ✅ HTTPS endpoints only (all endpoints use HTTPS)
+- ✅ Proper authentication configuration (Bearer token configured)
+- ✅ Clear operation descriptions (all operations documented)
+- ✅ Error response schemas (comprehensive error handling)
+
+**Current Schema Compliance:**
+- ✅ OpenAPI 3.1.0 format
+- ✅ All endpoints use HTTPS
+- ✅ Bearer token authentication configured
+- ✅ Comprehensive error handling
+- ✅ Schema version pinned in metadata (2025-12-25T00:32:52+0400)
+
+### Privacy & Data Protection
+
+**Important Considerations:**
+- All API calls are logged by OpenAI for service improvement
+- User inputs may be used to improve GPTs (can be disabled in settings)
+- Airtable data is accessed in real-time, not stored by GPT
+- Protected fields require explicit confirmation before modification
 
 ---
 
@@ -187,12 +281,12 @@ Example:
 "📊 Bottleneck Summary (as of [time] GST)
 
 📈 Overview: 7 active bottlenecks
-🔴 CRITICAL: 1 shipment (HVDC-ADOPT-SCT-0158)
+🔴 CRITICAL: 1 shipment (use actual shipment number from response)
 🟠 HIGH: 5 shipments (4 INSPECT_RED, 1 FANR_PENDING)
 
 ⚠️ Urgent Actions:
-1. SCT-0143: FANR approval due in 1h
-2. HVDC-ADOPT-SCT-0158: Correct details immediately"
+1. Use actual shptNo from API response: FANR approval due in 1h
+2. Use actual shptNo from API response: Correct details immediately"
 
 Use tables for multi-item data.
 Always provide timestamps in GST (Dubai time).
@@ -246,9 +340,9 @@ Suggest follow-up queries when relevant.
 
 ## 🔗 Resources
 
-- **API Base**: https://gets-416ut4t8g-chas-projects-08028e73.vercel.app
-- **OpenAPI Schema**: https://gets-416ut4t8g-chas-projects-08028e73.vercel.app/openapi-schema.yaml
-- **Health Check**: https://gets-416ut4t8g-chas-projects-08028e73.vercel.app/health
+- **API Base**: https://gets-logistics-api.vercel.app
+- **OpenAPI Schema**: https://gets-logistics-api.vercel.app/openapi-schema.yaml
+- **Health Check**: https://gets-logistics-api.vercel.app/health
 - **GitHub**: https://github.com/macho715/GETS-Logistics-API
 
 ---

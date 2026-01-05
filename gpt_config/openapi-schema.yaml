@@ -1,0 +1,590 @@
+openapi: 3.1.0
+info:
+  title: Airtable Direct API for GETS Logistics
+  version: 1.0.4
+  description: "Direct Airtable access for HVDC Project Logistics.\n\n**Configuration**:\n\
+    - Base ID: appnLz06h07aMm366\n- Schema Version (pinned): 2025-12-25T00:32:52+0400\n\
+    - Timezone: Asia/Dubai (UTC+04:00)\n- Authentication: Bearer Token (Airtable PAT\
+    \ required)\n\n**Available Tables** (10 tables):\n- Shipments (tbl4NnKYx1ECKmaaC)\n\
+    - Documents (tblbA8htgQSd2lOPO)\n- Approvals (tblJh4z49DbjX7cyb)\n- Actions (tblkDpCWYORAPqxhw)\n\
+    - Events (tblGw5wKFQhR9FBRR)\n- Evidence (tbljDDDNyvZY1sORx)\n- BottleneckCodes\
+    \ (tblMad2YVdiN8WAYx)\n- Owners (tblAjPArtKVBsShfE)\n- Vendors (tblZ6Kc9EQP7Grx3B)\n\
+    - Sites (tblSqSRWCe1IxCIih)\n\n**Protected Fields** (warn before updating):\n\
+    - Shipments: shptNo, currentBottleneckCode, bottleneckSince, riskLevel, nextAction,\
+    \ actionOwner, dueAt\n- Documents: shptNo, docType, status\n- Actions: shptNo,\
+    \ status, priority, dueAt, actionText, owner\n- Events: timestamp, shptNo, entityType,\
+    \ toStatus\n\n**Query Parameters (Airtable Standard)**:\n- filterByFormula: Must\
+    \ be URL-encoded (e.g., UPPER({shptNo})='SCT-0143')\n- fields[]: Array parameter\
+    \ for field selection\n- sort[0][field]: First sort field name\n- sort[0][direction]:\
+    \ Sort direction (asc/desc)\n\n**URL Length Limit**: 16,000 characters. For complex\
+    \ formulas exceeding this limit, use POST /listRecords endpoint.\n\n**⚠️ Common\
+    \ Errors & Solutions**:\n\n1. **UNKNOWN_FIELD_NAME: \"createdTime\"** - System\
+    \ fields cannot be used for sorting.\n   Solution: Use data fields like shptNo,\
+    \ riskLevel, dueAt instead of system fields.\n\n2. **404 NOT_FOUND** - Invalid\
+    \ or placeholder record ID used in getRecord/updateRecord.\n   Solution: Always\
+    \ call getRecords first with filterByFormula to obtain valid record ID before\
+    \ getRecord/updateRecord operations.\n\n3. **UnrecognizedKwargsError: fields**\
+    \ - Missing fields wrapper in updateRecord body.\n   Solution: Always use {\"\
+    fields\": {...}} structure, never top-level field properties.\n"
+servers:
+- url: https://api.airtable.com/v0
+  description: 'Airtable API v0 (Base: appnLz06h07aMm366)'
+paths:
+  /{baseId}/{tableName}:
+    get:
+      summary: Get records from Airtable table
+      operationId: getRecords
+      description: 'Query table with filter/sort/pagination (max 100). Filter: UPPER({shptNo})=''SCT-0143''.
+        Sort: use data fields (shptNo, riskLevel), NOT createdTime (system field).
+        URL-encode required. For formulas >16k chars, use POST /listRecords.
+
+        '
+      parameters:
+      - name: baseId
+        in: path
+        required: true
+        description: Airtable Base ID (use appnLz06h07aMm366)
+        schema:
+          type: string
+        example: appnLz06h07aMm366
+      - name: tableName
+        in: path
+        required: true
+        description: Table name (Shipments, Documents, Approvals, Actions, Events,
+          Evidence, BottleneckCodes, Owners, Vendors, Sites) or table ID
+        schema:
+          type: string
+        example: Shipments
+      - name: maxRecords
+        in: query
+        description: Max records to return (default 100, max 100)
+        schema:
+          type: integer
+          maximum: 100
+        example: 10
+      - name: pageSize
+        in: query
+        description: Records per page (max 100)
+        schema:
+          type: integer
+          maximum: 100
+      - name: offset
+        in: query
+        description: Pagination offset (from previous response)
+        schema:
+          type: string
+      - name: view
+        in: query
+        description: View name or ID
+        schema:
+          type: string
+      - name: sort[0][field]
+        in: query
+        description: 'First sort field name (Airtable standard bracket notation).
+
+
+          ⚠️ IMPORTANT: System fields cannot be used for sorting:
+
+          - ❌ createdTime (system field - causes UNKNOWN_FIELD_NAME error)
+
+          - ✅ Use actual data fields instead (e.g., shptNo, riskLevel, dueAt, eta,
+          vendor, site)
+
+
+          Sortable fields for Shipments table:
+
+          - shptNo, vendor, site, eta, currentBottleneckCode, riskLevel, nextAction,
+          actionOwner, dueAt, etc.
+
+          '
+        schema:
+          type: string
+        example: shptNo
+      - name: sort[0][direction]
+        in: query
+        description: First sort direction (Airtable standard bracket notation)
+        schema:
+          type: string
+          enum:
+          - asc
+          - desc
+        example: asc
+      - name: filterByFormula
+        in: query
+        description: 'Airtable filterByFormula expression. Must be URL-encoded.
+
+          Example: UPPER({shptNo})=''SCT-0143''
+
+          For formulas exceeding 16,000 characters, use POST /listRecords endpoint.
+
+          '
+        schema:
+          type: string
+        example: UPPER({shptNo})='SCT-0143'
+      - name: fields[]
+        in: query
+        description: 'Specific fields to return (Airtable standard array format: fields[]=Field1&fields[]=Field2)
+
+          '
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: true
+        example:
+        - shptNo
+        - status
+        - riskLevel
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: List of records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          description: Record ID (use this for updateRecord)
+                        createdTime:
+                          type: string
+                        fields:
+                          type: object
+                  offset:
+                    type: string
+                    description: Pagination offset for next page
+        '401':
+          description: 'Unauthorized (check PAT token and scopes: data.records:read)'
+        '404':
+          description: Not found (base or table not found)
+        '422':
+          description: Invalid filterByFormula, field names, or other parameters
+  /{baseId}/{tableName}/listRecords:
+    post:
+      summary: List records (POST method for long formulas)
+      operationId: listRecordsPost
+      description: 'POST method when filterByFormula exceeds 16,000 character URL
+        limit. No URL encoding needed (sent in JSON body). Supports formulas of any
+        length. Same response format as GET. For normal queries, use GET /{baseId}/{tableName}
+        instead.
+
+        '
+      parameters:
+      - name: baseId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: appnLz06h07aMm366
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+        example: Shipments
+      requestBody:
+        required: true
+        description: Query parameters as JSON body (same semantics as GET query params)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maxRecords:
+                  type: integer
+                  maximum: 100
+                  description: Max records to return
+                  example: 100
+                pageSize:
+                  type: integer
+                  maximum: 100
+                  description: Records per page
+                  example: 100
+                view:
+                  type: string
+                  description: View name or ID
+                filterByFormula:
+                  type: string
+                  description: 'Airtable formula. No URL encoding needed in POST body.
+
+                    Example: UPPER({shptNo})=''SCT-0143''
+
+                    '
+                  example: UPPER({shptNo})='SCT-0143'
+                fields:
+                  type: array
+                  items:
+                    type: string
+                  description: Field names to return (no brackets needed in POST body)
+                  example:
+                  - shptNo
+                  - status
+                  - riskLevel
+                sort:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      field:
+                        type: string
+                        description: 'Field name to sort by.
+
+                          ⚠️ Cannot use system fields like "createdTime".
+
+                          Use actual data fields (e.g., shptNo, dueAt, riskLevel).
+
+                          '
+                      direction:
+                        type: string
+                        enum:
+                        - asc
+                        - desc
+                  description: 'Sort configuration.
+
+                    WARNING: System fields (createdTime, etc.) cannot be used for
+                    sorting.
+
+                    Use actual data field names only.
+
+                    '
+                  example:
+                  - field: shptNo
+                    direction: asc
+            examples:
+              simpleFilter:
+                summary: Simple filter with field selection
+                value:
+                  filterByFormula: UPPER({shptNo})='SCT-0143'
+                  maxRecords: 10
+                  fields:
+                  - shptNo
+                  - riskLevel
+                  - currentBottleneckCode
+              complexFilter:
+                summary: Complex filter (for long formulas exceeding URL limit)
+                value:
+                  filterByFormula: AND(OR({riskLevel}='HIGH', {riskLevel}='CRITICAL'),
+                    IS_BEFORE({dueAt}, '2025-12-30'), NOT({currentBottleneckCode}='CLEARED'))
+                  fields:
+                  - shptNo
+                  - riskLevel
+                  - currentBottleneckCode
+                  - dueAt
+                  sort:
+                  - field: dueAt
+                    direction: asc
+                  maxRecords: 50
+              withSort:
+                summary: Sort by multiple fields
+                value:
+                  filterByFormula: '{riskLevel}=''HIGH'''
+                  sort:
+                  - field: dueAt
+                    direction: asc
+                  - field: shptNo
+                    direction: desc
+                  fields:
+                  - shptNo
+                  - riskLevel
+                  - dueAt
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: List of records (same format as GET endpoint)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  records:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        createdTime:
+                          type: string
+                        fields:
+                          type: object
+                  offset:
+                    type: string
+        '400':
+          description: Invalid request body (missing required fields or invalid format)
+        '401':
+          description: 'Unauthorized (check PAT token and scopes: data.records:read)'
+        '404':
+          description: Not found (base or table not found)
+        '422':
+          description: Invalid filterByFormula, field names, or other parameters
+  /{baseId}/{tableName}/{recordId}:
+    get:
+      summary: Get single record
+      operationId: getRecord
+      description: 'Get one record by ID. MUST call getRecords first with filterByFormula
+        to get valid record ID. Extract "id" from response records array. Cannot use
+        placeholder IDs like "recXXXXXXXX" - causes 404.
+
+        '
+      parameters:
+      - name: baseId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: appnLz06h07aMm366
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+        example: Shipments
+      - name: recordId
+        in: path
+        required: true
+        description: 'Record ID from getRecords response (format: recXXXXXXXXX).
+
+          Must be actual record ID, not placeholder. Get by calling getRecords first
+          with filterByFormula.
+
+          '
+        schema:
+          type: string
+        example: rec0uf8CaPUUB78tf
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Record details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  createdTime:
+                    type: string
+                  fields:
+                    type: object
+        '404':
+          description: Record not found
+    patch:
+      summary: Update Airtable record
+      operationId: updateRecord
+      description: 'Update record. Body: {"fields":{...}}. ⚠️ CRITICAL: Request body
+        must have "fields" wrapper. Workflow: 1) getRecords with filterByFormula,
+        2) extract record ID, 3) confirm, 4) call updateRecord with {"fields": {...}}.
+        Cannot use placeholder IDs - causes 404.
+
+        '
+      parameters:
+      - name: baseId
+        in: path
+        required: true
+        schema:
+          type: string
+        example: appnLz06h07aMm366
+      - name: tableName
+        in: path
+        required: true
+        schema:
+          type: string
+        example: Actions
+      - name: recordId
+        in: path
+        required: true
+        description: 'Record ID from getRecords response (format: recXXXXXXXXX).
+
+          Must be actual record ID obtained from getRecords, not placeholder.
+
+          '
+        schema:
+          type: string
+        example: rec0uf8CaPUUB78tf
+      requestBody:
+        required: true
+        description: 'CRITICAL: Request body MUST be {"fields": {...}}. Never send
+          fields as top-level properties.
+
+
+          ✅ CORRECT: {"fields": {"riskLevel": "LOW"}}
+
+          ❌ WRONG: {"riskLevel": "LOW"} (causes INVALID_REQUEST_MISSING_FIELDS)
+
+          '
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - fields
+              additionalProperties: false
+              properties:
+                fields:
+                  type: object
+                  description: 'Fields to update. Each key is a field name, value
+                    is the new value.
+
+                    Only include fields you want to change.
+
+                    '
+                  additionalProperties: true
+                  example:
+                    riskLevel: LOW
+                    currentBottleneckCode: CLEARED
+            example:
+              fields:
+                riskLevel: LOW
+            examples:
+              updateRiskLevel:
+                summary: Update risk level only
+                description: Simple example with single field update
+                value:
+                  fields:
+                    riskLevel: LOW
+              clearBottleneck:
+                summary: Clear bottleneck and set risk level
+                description: Update multiple fields in Shipments table
+                value:
+                  fields:
+                    currentBottleneckCode: CLEARED
+                    riskLevel: LOW
+              updateAction:
+                summary: Update Action record fields
+                description: Update actionText and status in Actions table
+                value:
+                  fields:
+                    actionText: Share GP copy to DSV.
+                    status: OPEN
+              updateDueDate:
+                summary: Update due date field
+                description: Update dueAt field with ISO datetime in Asia/Dubai timezone
+                value:
+                  fields:
+                    dueAt: '2025-12-30T12:00:00+04:00'
+              updateMultipleFields:
+                summary: Update multiple shipment fields
+                description: Update risk level, bottleneck, and due date together
+                value:
+                  fields:
+                    riskLevel: HIGH
+                    currentBottleneckCode: INSPECT_RED
+                    dueAt: '2025-12-30T12:00:00+04:00'
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  createdTime:
+                    type: string
+                  fields:
+                    type: object
+              example:
+                id: rec0uf8CaPUUB78tf
+                createdTime: '2025-12-24T10:00:00.000Z'
+                fields:
+                  actionText: Share GP copy to DSV.
+                  status: OPEN
+        '401':
+          description: 'Unauthorized (check PAT token and scopes: data.records:write)'
+        '404':
+          description: Record not found (verify recordId and tableName)
+        '422':
+          description: Invalid field names or values (check field names against Airtable
+            schema)
+components:
+  schemas: {}
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: AirtablePAT
+      description: 'Airtable Personal Access Token (PAT) for authentication.
+
+
+        **CURRENT TOKEN (from project config):**
+
+        Token name: chat_gpts
+
+        Token prefix: patDazyBR21DC5Bqs
+
+        Full token: [REDACTED - Store in Vercel environment variables: AIRTABLE_API_TOKEN or
+        ChatGPT Actions authentication settings]
+
+        (Full token stored in Vercel environment variables: AIRTABLE_API_TOKEN or
+        ChatGPT Actions authentication settings)
+
+
+        **REQUIRED SETUP in ChatGPT Actions:**
+
+        1. Go to Actions tab → Authentication
+
+        2. Select Authentication Type: "Bearer"
+
+        3. Paste your full PAT in Token field: [REDACTED - Use your own Airtable PAT from https://airtable.com/create/tokens]
+
+        4. Save and test
+
+
+        **GET PAT from:**
+
+        https://airtable.com/create/tokens
+
+
+        **REQUIRED SCOPES:**
+
+        - data.records:read (for GET operations: getRecords, getRecord, listRecordsPost)
+
+        - data.records:write (for PATCH operation: updateRecord)
+
+        - Additional scopes: data.recordComments:read/write, schema.bases:read/write,
+        webhook:manage, block:manage, user.email:read
+
+
+        **ACCESS PERMISSIONS:**
+
+        - All resources: All current and future bases in all current and future workspaces
+
+        - Base ID: appnLz06h07aMm366 (HVDC Logistics)
+
+
+        **TOKEN FORMAT:**
+
+        - Must start with "pat" (current prefix: patDazyBR21DC5Bqs)
+
+        - No spaces before or after token
+
+        - Full token length: 96 characters
+
+
+        **COMMON ISSUES:**
+
+        - 401/403 Error: Check PAT scopes and base access permissions
+
+        - Invalid token: Ensure token starts with "pat" and has no extra whitespace
+
+        - Base access denied: Token has "All resources" access, should work for all
+        bases
+
+
+        **NOTE:** For security, the full token should be configured in ChatGPT Actions
+        authentication settings. This spec includes the token for reference only.
+
+        '

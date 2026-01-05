@@ -58,6 +58,7 @@ curl https://gets-logistics-api.vercel.app/document/status/SCT-0143
 |----------|--------|-------------|---------|
 | `/` | GET | API info & capabilities | [Try it](https://gets-logistics-api.vercel.app/) |
 | `/health` | GET | System health & schema validation | [Try it](https://gets-logistics-api.vercel.app/health) |
+| `/shipments/verify` | GET | Verify multiple shipments (GPTs Action) | Example: `/shipments/verify?shptNo=HE-0512,HE-0513` |
 | `/status/summary` | GET | Global shipment KPIs | [Try it](https://gets-logistics-api.vercel.app/status/summary) |
 | `/approval/summary` | GET | Approval statistics with SLA tracking | [Try it](https://gets-logistics-api.vercel.app/approval/summary) |
 | `/bottleneck/summary` | GET | Bottleneck analysis & aging | [Try it](https://gets-logistics-api.vercel.app/bottleneck/summary) |
@@ -218,7 +219,44 @@ Set these in Vercel Dashboard → Project Settings → Environment Variables:
 
 ```
 AIRTABLE_API_TOKEN=your_personal_access_token
+API_KEY=optional_api_key_for_gpts
 ```
+
+---
+
+### Deployment Checklist
+
+- Sync OpenAPI schema after edits: `./scripts/sync_openapi.sh` or `python scripts/sync_openapi.py`
+- Run tests: `pytest -q` and `pytest tests/test_shipments_verify.py -v`
+- Run preflight: `./scripts/deploy_preflight.sh`
+- Verify schema is served: `curl ${PROD_URL}/openapi-schema.yaml`
+
+### Available Scripts & Tools
+
+#### OpenAPI Schema Synchronization
+- **`scripts/sync_openapi.sh`** - Bash script (Linux/macOS/Git Bash): `./scripts/sync_openapi.sh`
+- **`scripts/sync_openapi.py`** - Python script (cross-platform): `python scripts/sync_openapi.py`
+- **`scripts/sync_openapi.ps1`** - PowerShell script (Windows): `.\scripts\sync_openapi.ps1`
+
+Syncs `docs/openapi/openapi-gets-api.yaml` → `openapi-schema.yaml` (served at `/openapi-schema.yaml`)
+
+#### Data Upload Scripts
+- **`scripts/upload_shipments_to_airtable.py`** - Upload shipments data
+- **`scripts/upload_actions_to_airtable.py`** - Upload actions from TSV/CSV
+
+#### Validation & Testing Scripts
+- **`scripts/check_airtable_schema.py`** - Validate Airtable schema against lock file
+- **`scripts/diagnose_airtable_upload.py`** - Diagnose upload failures
+- **`scripts/test_update_record.py`** - Test Airtable updateRecord API
+- **`scripts/deploy_preflight.sh`** - Pre-deployment validation (PROD_URL required)
+
+#### GPT Configuration
+- **`scripts/prepare_gpt_config.py`** - Generate GPT configuration files
+  - Outputs: `gpt_config/instructions.txt`, `gpt_config/openapi-schema.yaml`, knowledge files
+
+#### Test Files
+- **`tests/test_shipments_verify.py`** - `/shipments/verify` endpoint tests
+- **`run_airtable_tests.py`** - Airtable integration tests runner
 
 ---
 
@@ -381,7 +419,7 @@ ruff check . && black --check . && isort --check-only .
 | **Schema Validation** | 100% | 100% | ✅ |
 
 **Last Performance Test**: 2025-12-25 20:49:33
-**All 9 endpoints operational**: ✅
+**All 10 endpoints operational**: ✅
 
 ---
 

@@ -7,7 +7,7 @@ Usage:
   locust -f tests/load_test.py --users 10 --spawn-rate 2 --run-time 30s --headless
 
   # Run with web UI
-  locust -f tests/load_test.py --host https://gets-416ut4t8g-chas-projects-08028e73.vercel.app
+  locust -f tests/load_test.py --host https://gets-logistics-api.vercel.app
 """
 
 from locust import HttpUser, task, between, events
@@ -27,7 +27,7 @@ class GETSApiUser(HttpUser):
     """
     
     wait_time = between(1, 3)  # Wait 1-3 seconds between tasks
-    host = "https://gets-416ut4t8g-chas-projects-08028e73.vercel.app"
+    host = "https://gets-logistics-api.vercel.app"
     
     def on_start(self):
         """Called when a user starts"""
@@ -133,7 +133,7 @@ class GETSApiAdminUser(HttpUser):
     """
     
     wait_time = between(5, 10)  # Less frequent
-    host = "https://gets-416ut4t8g-chas-projects-08028e73.vercel.app"
+    host = "https://gets-logistics-api.vercel.app"
     
     @task(1)
     def test_ingest_events(self):

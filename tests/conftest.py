@@ -14,7 +14,7 @@ DUBAI_TZ = ZoneInfo("Asia/Dubai")
 @pytest.fixture
 def app():
     """Flask app fixture"""
-    from api.document_status import app as flask_app
+    from api.app import app as flask_app
     
     flask_app.config['TESTING'] = True
     flask_app.config['DEBUG'] = False
@@ -92,8 +92,8 @@ def mock_airtable_client(monkeypatch):
     mock_client = MockAirtableClient()
     
     # Patch airtable_client in the module
-    import api.document_status
-    monkeypatch.setattr(api.document_status, "airtable_client", mock_client)
+    import api.app
+    monkeypatch.setattr(api.app, "airtable_client", mock_client)
     
     return mock_client
 
