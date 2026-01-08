@@ -713,7 +713,7 @@ components:
 
         **CURRENT TOKEN (from project config):**
         Token name: chat_gpts
-        Token prefix: patDazyBR21DC5Bqs
+        Token prefix: [REDACTED]
         Full token: [REDACTED - Store in Vercel environment variables: AIRTABLE_API_TOKEN or ChatGPT Actions authentication settings]
         (Full token stored in Vercel environment variables: AIRTABLE_API_TOKEN or ChatGPT Actions authentication settings)
 
@@ -736,9 +736,10 @@ components:
         - Base ID: appnLz06h07aMm366 (HVDC Logistics)
 
         **TOKEN FORMAT:**
-        - Must start with "pat" (current prefix: patDazyBR21DC5Bqs)
+        - Must start with "pat" (current prefix: [REDACTED])
         - No spaces before or after token
         - Full token length: 96 characters
+        - ⚠️ **보안 주의**: 토큰 전문/부분을 문서에 포함하지 말 것.
 
         **COMMON ISSUES:**
         - 401/403 Error: Check PAT scopes and base access permissions
