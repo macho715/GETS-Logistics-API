@@ -4,7 +4,7 @@ info:
   version: 1.0.4
   description: "Direct Airtable access for HVDC Project Logistics.\n\n**Configuration**:\n\
     - Base ID: appnLz06h07aMm366\n- Schema Version (pinned): 2025-12-25T00:32:52+0400\n\
-    - Timezone: Asia/Dubai (UTC+04:00)\n- Authentication: Bearer Token (Airtable PAT\
+    - Timezone: Asia/Dubai (UTC+04:00)\n- Authentication: API Key (Airtable PAT\
     \ required)\n\n**Available Tables** (10 tables):\n- Shipments (tbl4NnKYx1ECKmaaC)\n\
     - Documents (tblbA8htgQSd2lOPO)\n- Approvals (tblJh4z49DbjX7cyb)\n- Actions (tblkDpCWYORAPqxhw)\n\
     - Events (tblGw5wKFQhR9FBRR)\n- Evidence (tbljDDDNyvZY1sORx)\n- BottleneckCodes\
@@ -137,7 +137,7 @@ paths:
         - status
         - riskLevel
       security:
-      - BearerAuth: []
+      - apiKeyAuth: []
       responses:
         '200':
           description: List of records
@@ -296,7 +296,7 @@ paths:
                   - riskLevel
                   - dueAt
       security:
-      - BearerAuth: []
+      - apiKeyAuth: []
       responses:
         '200':
           description: List of records (same format as GET endpoint)
@@ -361,7 +361,7 @@ paths:
           type: string
         example: rec0uf8CaPUUB78tf
       security:
-      - BearerAuth: []
+      - apiKeyAuth: []
       responses:
         '200':
           description: Record details
@@ -481,7 +481,7 @@ paths:
                     currentBottleneckCode: INSPECT_RED
                     dueAt: '2025-12-30T12:00:00+04:00'
       security:
-      - BearerAuth: []
+      - apiKeyAuth: []
       responses:
         '200':
           description: Updated successfully
@@ -512,10 +512,10 @@ paths:
 components:
   schemas: {}
   securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: AirtablePAT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
       description: 'Airtable Personal Access Token (PAT) for authentication.
 
 
@@ -536,7 +536,7 @@ components:
 
         1. Go to Actions tab → Authentication
 
-        2. Select Authentication Type: "Bearer"
+        2. Select Authentication Type: "API Key"
 
         3. Paste your full PAT in Token field: [REDACTED - Use your own Airtable PAT from https://airtable.com/create/tokens]
 

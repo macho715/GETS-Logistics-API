@@ -50,6 +50,13 @@ curl https://gets-logistics-api.vercel.app/document/status/SCT-0143
 4. Set Authentication: None
 5. Test and publish
 
+### 3. For Airtable Direct API Schema (gpt_config)
+
+1. Open ChatGPT → Create Custom GPT
+2. Go to Actions → Import from file or paste `gpt_config/openapi-schema.yaml`
+3. Set Authentication: API Key (use `Authorization` header with Airtable PAT)
+4. Test and publish
+
 ---
 
 ## 📋 API Endpoints
