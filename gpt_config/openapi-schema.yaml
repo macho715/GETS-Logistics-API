@@ -523,7 +523,7 @@ components:
 
         Token name: chat_gpts
 
-        Token prefix: patDazyBR21DC5Bqs
+        Token prefix: [REDACTED]
 
         Full token: [REDACTED - Store in Vercel environment variables: AIRTABLE_API_TOKEN or
         ChatGPT Actions authentication settings]
@@ -567,7 +567,7 @@ components:
 
         **TOKEN FORMAT:**
 
-        - Must start with "pat" (current prefix: patDazyBR21DC5Bqs)
+        - Must start with "pat"
 
         - No spaces before or after token
 
@@ -585,6 +585,6 @@ components:
 
 
         **NOTE:** For security, the full token should be configured in ChatGPT Actions
-        authentication settings. This spec includes the token for reference only.
+        authentication settings. 토큰 전문/부분을 문서에 포함하지 말 것.
 
         '
