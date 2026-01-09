@@ -4,8 +4,8 @@ info:
   version: 1.0.4
   description: "Direct Airtable access for HVDC Project Logistics.\n\n**Configuration**:\n\
     - Base ID: appnLz06h07aMm366\n- Schema Version (pinned): 2025-12-25T00:32:52+0400\n\
-    - Timezone: Asia/Dubai (UTC+04:00)\n- Authentication: API Key (Airtable PAT\
-    \ required)\n\n**Available Tables** (10 tables):\n- Shipments (tbl4NnKYx1ECKmaaC)\n\
+    - Timezone: Asia/Dubai (UTC+04:00)\n- Authentication: API Key (Authorization\
+    \ header value must be \"Bearer <Airtable PAT>\")\n\n**Available Tables** (10 tables):\n- Shipments (tbl4NnKYx1ECKmaaC)\n\
     - Documents (tblbA8htgQSd2lOPO)\n- Approvals (tblJh4z49DbjX7cyb)\n- Actions (tblkDpCWYORAPqxhw)\n\
     - Events (tblGw5wKFQhR9FBRR)\n- Evidence (tbljDDDNyvZY1sORx)\n- BottleneckCodes\
     \ (tblMad2YVdiN8WAYx)\n- Owners (tblAjPArtKVBsShfE)\n- Vendors (tblZ6Kc9EQP7Grx3B)\n\
@@ -538,7 +538,8 @@ components:
 
         2. Select Authentication Type: "API Key"
 
-        3. Paste your full PAT in Token field: [REDACTED - Use your own Airtable PAT from https://airtable.com/create/tokens]
+        3. Paste your token in Token field as: "Bearer <YOUR_AIRTABLE_PAT>" (include
+        the "Bearer " prefix)
 
         4. Save and test
 
@@ -567,11 +568,13 @@ components:
 
         **TOKEN FORMAT:**
 
-        - Must start with "pat" (current prefix: patDazyBR21DC5Bqs)
+        - Must be formatted as "Bearer <PAT>"
 
-        - No spaces before or after token
+        - PAT must start with "pat" (current prefix: patDazyBR21DC5Bqs)
 
-        - Full token length: 96 characters
+        - No spaces before or after the PAT
+
+        - Full PAT length: 96 characters
 
 
         **COMMON ISSUES:**
